@@ -55,12 +55,17 @@ export function renderSankey(data) {
         .attr("x", d => d.x)
         .attr("y", 25)
         .attr("text-anchor", "middle")
-        .attr("fill", "#dfff00")
-        .attr("font-size", "13px")
-        .attr("font-weight", "700")
+        .attr("fill", "rgba(255,255,255,0.7)")
+        .attr("font-size", "14px")
+        .attr("font-weight", "600")
         .attr("text-transform", "uppercase")
         .attr("letter-spacing", "2px")
         .text(d => d.label);
+
+    // Color scale for links based on Outlook origin
+    const colorScale = d3.scaleOrdinal()
+        .domain(['Sunny', 'Overcast', 'Rain'])
+        .range(['#f97316', '#38bdf8', '#a855f7']); // Vibrant Orange, Cyan, Purple
 
     // Draw Links
     svg.append("g")
@@ -70,6 +75,7 @@ export function renderSankey(data) {
         .join("path")
         .attr("class", "link")
         .attr("d", sankeyLinkHorizontal())
+        .attr("stroke", d => colorScale(d.cases[0].outlook))
         .attr("stroke-width", d => Math.max(1, d.width))
         .on("mouseenter", function(event, d) {
             d3.selectAll('.link').style("stroke-opacity", 0.05);
@@ -82,12 +88,21 @@ export function renderSankey(data) {
                    .style('left', (event.pageX + 15) + 'px')
                    .style('top', (event.pageY - 15) + 'px');
                    
+            // Update narrative panel
+            const panel = document.getElementById('narrative-panel');
+            const sample = d.cases[0];
+            const decision = sample.play === 'Yes' ? 'JUGAR' : 'NO JUGAR';
+            
+            let text = `💡 Día ${sample.outlook.toUpperCase()}, con temperatura ${sample.temp.toUpperCase()}, humedad ${sample.humidity.toUpperCase()} y viento ${sample.wind.toUpperCase()}. Decisión: ${decision}.`;
+            panel.innerText = text;
+                   
             // Trigger animation for cases in this link
             animateCases(d.cases);
         })
         .on("mouseleave", function() {
             d3.selectAll('.link').style("stroke-opacity", null);
             d3.select('#tooltip').style('opacity', 0);
+            document.getElementById('narrative-panel').innerText = "Pasa el cursor sobre el gráfico para ver la regla lógica...";
         });
 
     // Draw Nodes (Icons instead of abstract names where possible)
@@ -128,24 +143,31 @@ export function renderSankey(data) {
         if (isAnimating) return;
         isAnimating = true;
         
-        // Create balls
+        // Create SVG tennis balls
         const balls = svg.append("g").attr("class", "balls-container")
-            .selectAll("text")
+            .selectAll("g.tennis-ball")
             .data(casesToAnimate)
-            .join("text")
-            .attr("class", "tennis-ball")
-            .text("🎾")
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "central");
+            .join("g")
+            .attr("class", "tennis-ball");
+            
+        balls.append("circle")
+            .attr("r", 10)
+            .attr("fill", "#dfff00");
+            
+        // White seams of the tennis ball
+        balls.append("path")
+            .attr("d", "M -5,-7 Q 3,0 -5,7 M 5,-7 Q -3,0 5,7")
+            .attr("fill", "none")
+            .attr("stroke", "#ffffff")
+            .attr("stroke-width", 2);
             
         // Initial positions (Outlook nodes)
-        balls.attr("x", d => {
+        balls.attr("transform", d => {
             const n = nodeMap.get(`Outlook:${d.outlook}`);
-            return n.x0 + (n.x1 - n.x0)/2;
-        }).attr("y", d => {
-            const n = nodeMap.get(`Outlook:${d.outlook}`);
-            // random spread vertically
-            return n.y0 + Math.random() * (n.y1 - n.y0);
+            const x = n.x0 + (n.x1 - n.x0)/2;
+            const y = n.y0 + Math.random() * (n.y1 - n.y0);
+            d.currentAngle = 0;
+            return `translate(${x},${y}) rotate(0)`;
         });
         
         const categories = ['Outlook', 'Temp', 'Humidity', 'Wind', 'Play'];
@@ -157,18 +179,35 @@ export function renderSankey(data) {
                 const nextCat = categories[i+1];
                 
                 await balls.transition()
-                    .duration(600)
+                    .duration(700)
                     .ease(d3.easeCubicInOut)
-                    .attr("x", d => {
+                    .attrTween("transform", function(d) {
+                        const currentTransform = d3.select(this).attr("transform") || "";
+                        const match = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                        const startX = match ? parseFloat(match[1]) : 0;
+                        const startY = match ? parseFloat(match[2]) : 0;
+                        
                         const nextVal = d[nextCat.toLowerCase()];
                         const n = nodeMap.get(`${nextCat}:${nextVal}`);
-                        return n.x0 + (n.x1 - n.x0)/2;
-                    })
-                    .attr("y", d => {
-                        const nextVal = d[nextCat.toLowerCase()];
-                        const n = nodeMap.get(`${nextCat}:${nextVal}`);
-                        // Map the case to the node's vertical span
-                        return n.y0 + (n.y1 - n.y0) / 2 + (Math.random() * 20 - 10);
+                        const endX = n.x0 + (n.x1 - n.x0)/2;
+                        const endY = n.y0 + (n.y1 - n.y0) / 2 + (Math.random() * 20 - 10);
+                        
+                        const dx = endX - startX;
+                        const dy = endY - startY;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const rotationDelta = (dist / (Math.PI * 20)) * 360;
+                        
+                        const startAngle = d.currentAngle || 0;
+                        const endAngle = startAngle + (dx > 0 ? rotationDelta : -rotationDelta);
+                        d.currentAngle = endAngle;
+                        
+                        const interpX = d3.interpolateNumber(startX, endX);
+                        const interpY = d3.interpolateNumber(startY, endY);
+                        const interpAngle = d3.interpolateNumber(startAngle, endAngle);
+                        
+                        return function(t) {
+                            return `translate(${interpX(t)}, ${interpY(t)}) rotate(${interpAngle(t)})`;
+                        };
                     })
                     .end()
                     .then(() => {
@@ -181,13 +220,11 @@ export function renderSankey(data) {
             }
             
             // Final Hit
-            playRacketHit(); // For Yes
-            // We can check if any are 'No' to play net hit
             const hasNo = casesToAnimate.some(c => c.play === 'No');
             const hasYes = casesToAnimate.some(c => c.play === 'Yes');
             
             if (hasYes) playRacketHit();
-            if (hasNo) setTimeout(playNetHit, 150); // slight offset if both
+            if (hasNo) setTimeout(playNetHit, 150);
             
             // Remove balls after a delay
             setTimeout(() => {

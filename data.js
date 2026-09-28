@@ -31,7 +31,7 @@ export function getSankeyData() {
         return nodesMap.get(key).id;
     }
     
-    // Build the flow: Outlook -> Temp -> Humidity -> Wind -> Play
+    // V5: Revert to symmetric 5-column tree for visual uniformity
     rawData.forEach(row => {
         const path = [
             { name: row.outlook, category: 'Outlook' },

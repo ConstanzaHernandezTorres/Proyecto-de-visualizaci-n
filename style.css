@@ -35,21 +35,38 @@ header {
   backdrop-filter: blur(10px);
   border-bottom: 2px solid rgba(255, 255, 255, 0.2);
   z-index: 10;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 header p {
-  color: #e2e8f0;
-  font-size: 0.9rem;
+  color: #cbd5e1;
+  font-size: 1.05rem;
   max-width: 800px;
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+#narrative-panel {
+  margin-top: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-left: 4px solid #dfff00;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  color: #f8fafc;
+  transition: all 0.3s ease;
 }
 
 main {
@@ -93,14 +110,14 @@ svg {
 
 .link {
   fill: none;
-  stroke: var(--color-default);
-  stroke-opacity: 0.15;
+  stroke-opacity: 0.25;
   transition: stroke-opacity 0.3s;
   cursor: pointer;
 }
 
 .link:hover, .link.active {
-  stroke-opacity: 0.4;
+  stroke-opacity: 0.8 !important;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.3));
 }
 
 .tennis-ball {
