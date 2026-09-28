@@ -1,22 +1,4 @@
-// Play Tennis Dataset
-const rawData = [
-    { id: 'D1', outlook: 'Sunny', temp: 'Hot', humidity: 'High', wind: 'Weak', play: 'No' },
-    { id: 'D2', outlook: 'Sunny', temp: 'Hot', humidity: 'High', wind: 'Strong', play: 'No' },
-    { id: 'D3', outlook: 'Overcast', temp: 'Hot', humidity: 'High', wind: 'Weak', play: 'Yes' },
-    { id: 'D4', outlook: 'Rain', temp: 'Mild', humidity: 'High', wind: 'Weak', play: 'Yes' },
-    { id: 'D5', outlook: 'Rain', temp: 'Cool', humidity: 'Normal', wind: 'Weak', play: 'Yes' },
-    { id: 'D6', outlook: 'Rain', temp: 'Cool', humidity: 'Normal', wind: 'Strong', play: 'No' },
-    { id: 'D7', outlook: 'Overcast', temp: 'Cool', humidity: 'Normal', wind: 'Strong', play: 'Yes' },
-    { id: 'D8', outlook: 'Sunny', temp: 'Mild', humidity: 'High', wind: 'Weak', play: 'No' },
-    { id: 'D9', outlook: 'Sunny', temp: 'Cool', humidity: 'Normal', wind: 'Weak', play: 'Yes' },
-    { id: 'D10', outlook: 'Rain', temp: 'Mild', humidity: 'Normal', wind: 'Weak', play: 'Yes' },
-    { id: 'D11', outlook: 'Sunny', temp: 'Mild', humidity: 'Normal', wind: 'Strong', play: 'Yes' },
-    { id: 'D12', outlook: 'Overcast', temp: 'Mild', humidity: 'High', wind: 'Strong', play: 'Yes' },
-    { id: 'D13', outlook: 'Overcast', temp: 'Hot', humidity: 'Normal', wind: 'Weak', play: 'Yes' },
-    { id: 'D14', outlook: 'Rain', temp: 'Mild', humidity: 'High', wind: 'Strong', play: 'No' }
-];
-
-export function getSankeyData() {
+export function getSankeyData(rawData) {
     const nodesMap = new Map();
     const linksMap = new Map();
     
@@ -31,20 +13,29 @@ export function getSankeyData() {
         return nodesMap.get(key).id;
     }
     
-    // V5: Revert to symmetric 5-column tree for visual uniformity
-    rawData.forEach(row => {
+    // Process the dynamic CSV data
+    const filteredData = rawData.filter(row => {
+        const outlook = row.Outlook || row.outlook;
+        return outlook && outlook.toLowerCase() !== 'none';
+    });
+    
+    filteredData.forEach(row => {
+        // Fallbacks in case headers are slightly different
         const path = [
-            { name: row.outlook, category: 'Outlook' },
-            { name: row.temp, category: 'Temp' },
-            { name: row.humidity, category: 'Humidity' },
-            { name: row.wind, category: 'Wind' },
-            { name: row.play, category: 'Play' }
+            { name: row.Outlook || row.outlook, category: 'Outlook' },
+            { name: row.Temperature || row.temp, category: 'Temp' },
+            { name: row.Humidity || row.humidity, category: 'Humidity' },
+            { name: row.Wind || row.wind, category: 'Wind' },
+            { name: row.Play || row.play, category: 'Play' }
         ];
         
         for (let i = 0; i < path.length - 1; i++) {
             const sourceId = getNodeId(path[i].name, path[i].category);
             const targetId = getNodeId(path[i+1].name, path[i+1].category);
-            const linkKey = `${sourceId}-${targetId}`;
+            
+            // Link key based on origin Outlook to prevent color mixing
+            const originOutlook = row.Outlook || row.outlook;
+            const linkKey = `${sourceId}-${targetId}-${originOutlook}`;
             
             if (linksMap.has(linkKey)) {
                 const link = linksMap.get(linkKey);
@@ -64,5 +55,5 @@ export function getSankeyData() {
     const nodes = Array.from(nodesMap.values());
     const links = Array.from(linksMap.values());
     
-    return { nodes, links, rawData };
+    return { nodes, links, rawData: filteredData };
 }
