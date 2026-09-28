@@ -64,8 +64,8 @@ export function renderSankey(data) {
 
     // Color scale for links based on Outlook origin
     const colorScale = d3.scaleOrdinal()
-        .domain(['Sunny', 'Overcast', 'Rainy', 'Rain'])
-        .range(['#f97316', '#38bdf8', '#a855f7', '#a855f7']); // Vibrant Orange, Cyan, Purple
+        .domain(['Sunny', 'Overcast', 'Rain'])
+        .range(['#f97316', '#38bdf8', '#a855f7']); // Vibrant Orange, Cyan, Purple
 
     // Draw Links
     svg.append("g")
@@ -81,10 +81,10 @@ export function renderSankey(data) {
             d3.selectAll('.link').style("stroke-opacity", 0.05);
             d3.select(this).style("stroke-opacity", 0.6);
             
-            // Show tooltip with thousand separators
+            // Show tooltip
             const tooltip = d3.select('#tooltip');
             tooltip.style('opacity', 1)
-                   .html(`${d.source.name} → ${d.target.name}<br/>${d.value.toLocaleString('es-ES')} casos`)
+                   .html(`${d.source.name} → ${d.target.name}<br/>${d.value} días`)
                    .style('left', (event.pageX + 15) + 'px')
                    .style('top', (event.pageY - 15) + 'px');
                    
@@ -139,12 +139,9 @@ export function renderSankey(data) {
     
     let isAnimating = false;
     
-    function animateCases(allCases) {
+    function animateCases(casesToAnimate) {
         if (isAnimating) return;
         isAnimating = true;
-        
-        // Sampling to prevent browser crash (max 15 balls per animation)
-        const casesToAnimate = allCases.slice(0, 15);
         
         // Create SVG tennis balls
         const balls = svg.append("g").attr("class", "balls-container")
