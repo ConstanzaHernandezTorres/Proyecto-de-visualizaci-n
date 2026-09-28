@@ -44,7 +44,10 @@ export function getSankeyData() {
         for (let i = 0; i < path.length - 1; i++) {
             const sourceId = getNodeId(path[i].name, path[i].category);
             const targetId = getNodeId(path[i+1].name, path[i+1].category);
-            const linkKey = `${sourceId}-${targetId}`;
+            
+            // Al incluir el clima original ('outlook') en el ID del link, 
+            // forzamos a D3 a dibujar líneas paralelas en lugar de fusionarlas.
+            const linkKey = `${sourceId}-${targetId}-${row.outlook}`;
             
             if (linksMap.has(linkKey)) {
                 const link = linksMap.get(linkKey);
