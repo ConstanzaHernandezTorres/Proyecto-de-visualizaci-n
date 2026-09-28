@@ -10,6 +10,19 @@ export function renderSankey(data) {
     const height = container.clientHeight || 600;
     
     d3.select(svgEl).selectAll('*').remove();
+
+    // El tooltip está dentro de #chart-container (position: absolute), así que su
+    // posición se calcula relativa al contenedor y no a la página (pageX/pageY).
+    const tooltipEl = document.getElementById('tooltip');
+    function moveTooltip(event) {
+        const [x, y] = d3.pointer(event, container);
+        const w = tooltipEl.offsetWidth, h = tooltipEl.offsetHeight;
+        const left = Math.max(8, Math.min(x + 15, container.clientWidth - w - 8));
+        let top = y + 15;
+        if (top + h > container.clientHeight - 8) top = y - h - 15;  // si no cabe abajo, va arriba
+        tooltipEl.style.left = left + 'px';
+        tooltipEl.style.top = Math.max(8, top) + 'px';
+    }
     
     const svg = d3.select(svgEl)
         .attr("viewBox", [0, 0, width, height]);
@@ -84,9 +97,8 @@ export function renderSankey(data) {
             // Show tooltip
             const tooltip = d3.select('#tooltip');
             tooltip.style('opacity', 1)
-                   .html(`${d.source.name} → ${d.target.name}<br/>${d.value} días`)
-                   .style('left', (event.pageX + 15) + 'px')
-                   .style('top', (event.pageY - 15) + 'px');
+                   .html(`${d.source.name} → ${d.target.name}<br/>${d.value} días`);
+            moveTooltip(event);
                    
             // Update narrative panel
             const panel = document.getElementById('narrative-panel');
@@ -99,6 +111,7 @@ export function renderSankey(data) {
             // Trigger animation for cases in this link
             animateCases(d.cases);
         })
+        .on("mousemove", moveTooltip)
         .on("mouseleave", function() {
             d3.selectAll('.link').style("stroke-opacity", null);
             d3.select('#tooltip').style('opacity', 0);
