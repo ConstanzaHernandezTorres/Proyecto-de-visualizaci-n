@@ -1,0 +1,389 @@
+/* ==========================================================================
+   EL CINTURÓN DE FUEGO - ESTILO MINIMALISTA Y ALTA TASA DE TINTA (DATA-INK)
+   Radio crítico de 10 km y anillos concéntricos geográficos integrados
+   ========================================================================== */
+
+:root {
+  --bg-deep: #0e0d0c;
+  --bg-surface: #151412;
+  --bg-glass: rgba(21, 20, 18, 0.88);
+  --border-dim: rgba(244, 236, 224, 0.1);
+  --border-active: rgba(255, 115, 0, 0.4);
+
+  --text-main: #f4ece0;
+  --text-muted: #aaa194;
+  --text-dim: #6d665d;
+
+  --magma-core: #ff3d00;
+  --magma-glow: #ff7700;
+  --ochre-warn: #e5a93b;
+  --land-fill: #1c1a17;
+  --land-stroke: #2b2823;
+
+  --font-serif: "Fraunces", Georgia, serif;
+  --font-sans: "Archivo", -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius-sm: 5px;
+  --radius-md: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.4;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   CABECERA MÍNIMA
+   ========================================================================== */
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.main-title {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.title-sub {
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.source-credit {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   ESCENARIO DE VISUALIZACIÓN A PANTALLA COMPLETA
+   ========================================================================== */
+
+.stage-container {
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
+.viz-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.viz-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.viz-svg:active {
+  cursor: grabbing;
+}
+
+
+/* ==========================================================================
+   CONTROLES DE ZOOM
+   ========================================================================== */
+
+.zoom-controls {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.btn-zoom {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-dim);
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-zoom:last-child {
+  border-bottom: none;
+}
+
+.btn-zoom:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.btn-zoom:active {
+  background: var(--ochre-warn);
+  color: #0e0d0c;
+}
+
+/* ==========================================================================
+   ELEMENTOS DE MAPA D3
+   ========================================================================== */
+
+.land {
+  fill: var(--land-fill);
+  stroke: var(--land-stroke);
+  stroke-width: 0.5px;
+}
+
+.graticule {
+  fill: none;
+  stroke: rgba(244, 236, 224, 0.03);
+  stroke-width: 0.5px;
+}
+
+.volcano-mark {
+  cursor: pointer;
+  transition: opacity 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
+}
+
+.volcano-mark:hover, .volcano-mark.hovered {
+  stroke: #ffffff !important;
+  stroke-width: 2.2px !important;
+  opacity: 1 !important;
+}
+
+.volcano-mark.selected {
+  stroke: #ffea00 !important;
+  stroke-width: 2.8px !important;
+  opacity: 1 !important;
+}
+
+/* Onda expansiva animada (pulso sísmico/sonoro) */
+.concentric-wave {
+  fill: none;
+  stroke: var(--magma-glow);
+  stroke-width: 1.6px;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   FICHA DE DETALLES A DEMANDA (CON ANILLOS SIMULTÁNEOS)
+   ========================================================================== */
+
+.inspector-card {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  min-width: 210px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.ins-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ins-name {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.ins-country {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ins-metrics {
+  display: flex;
+  gap: 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-dim);
+}
+
+.ins-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ins-metric-lbl {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ins-metric-val {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.val-vei {
+  color: var(--ochre-warn);
+}
+
+.val-pop {
+  color: var(--magma-glow);
+}
+
+/* ==========================================================================
+   LEYENDA COMPACTA
+   ========================================================================== */
+
+.viz-legend {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 20;
+}
+
+.legend-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legend-title {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.legend-gradient {
+  height: 5px;
+  width: 100px;
+  border-radius: 2px;
+  background: linear-gradient(to right, #ffffb2, #fecc5c, #fd8d3c, #f03b20, #bd0026);
+}
+
+.legend-nums {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+}
+
+.legend-dots {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.d {
+  border-radius: 50%;
+  background: var(--ochre-warn);
+  display: inline-block;
+}
+
+.d1 { width: 3px; height: 3px; }
+.d2 { width: 7px; height: 7px; }
+.d3 { width: 13px; height: 13px; }
+
+/* ==========================================================================
+   TOOLTIP
+   ========================================================================== */
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(21, 20, 18, 0.95);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 0.74rem;
+  color: var(--text-main);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  z-index: 100;
+  max-width: 210px;
+}
+
+.tooltip-title {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--magma-glow);
+  margin-bottom: 2px;
+}
+
+.tooltip-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 1px;
+}
+
+.tooltip-dim {
+  color: var(--text-dim);
+}
