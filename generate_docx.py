@@ -186,9 +186,11 @@ def create_document():
 
     caps = [
         ("Cápsula 17 — «La Pregunta Antes del Gráfico»", 
-         "El diseño no partió eligiendo un gráfico al azar. Se formuló una pregunta precisa de investigación: ¿Qué volcanes combinan explosividad con cercanía humana extrema? Todo el diseño está subordinado a responderla."),
+         "El diseño no partió eligiendo un gráfico al azar, sino respondiendo a la crítica docente: ¿Dónde radica la catástrofe humana latente? Se formuló una pregunta unívoca: qué volcanes combinan explosividad crítica (VEI ≥ 4) con poblaciones masivas en evacuación inmediata (10 km)."),
+        ("Cápsula 18 — «Ostras vs. Perlas (Exploratorio vs. Explicativo)»",
+         "Siguiendo el feedback de la revisión, se transformó la visualización de un catálogo exploratorio disperso (958 volcanes donde el usuario buscaba entre '100 ostras') a un mensaje explicativo directo: se pre-filtra de entrada a los 61 volcanes de Riesgo Crítico ('las perlas'), permitiendo comprender la emergencia demográfica en el primer segundo."),
         ("Cápsula 22 — «El Mantra de Shneiderman»", 
-         "Estructura en tres niveles: (1) Overview First: mapa global continuo con círculos proporcionales a 10 km; (2) Zoom & Filter: controles de zoom suave y arrastre; (3) Details on Demand: ficha técnica y anillos concéntricos al seleccionar."),
+         "Estructura en tres niveles: (1) Overview First: mapa global de las 61 amenazas críticas; (2) Zoom & Filter: controles de filtro por severidad y chips de casos críticos; (3) Details on Demand: ficha técnica, anillos geográficos y sonificación al seleccionar."),
         ("Cápsula 09 — «Escalar el Área, No el Radio»", 
          "Al representar la población mediante círculos, se aplicó una escala de área (raíz/logaritmo). Si se escala el radio linealmente, el área percibida se multiplica al cuadrado, induciendo un grave error de estimación perceptual."),
         ("Cápsula 10 — «El Color y Daltonismo»", 

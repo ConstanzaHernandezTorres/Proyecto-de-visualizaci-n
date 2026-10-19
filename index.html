@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>El Cinturón de Fuego — Riesgo Volcánico y Población</title>
+  <title>Amenaza Volcánica Global — Riesgo Humanitario Crítico</title>
 
   <!-- Tipografía -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,17 +20,48 @@
 </head>
 <body>
 
-  <!-- CABECERA MÍNIMA -->
+  <!-- CABECERA MÍNIMA CON PREGUNTA ANALÍTICA PRECISA (CÁPSULA 17) -->
   <header class="app-header">
-    <h1 class="main-title">El Cinturón de Fuego <span class="title-sub">· Fuerza Geológica (VEI) vs. Población en Zona de Evacuación (10 km)</span></h1>
-    <div class="source-credit">Smithsonian GVP & LandScan</div>
+    <div class="header-main">
+      <h1 class="main-title">Amenaza Volcánica Global <span class="title-sub">· ¿Dónde radica la catástrofe? Los 61 volcanes con explosividad crítica (VEI ≥ 4) y población masiva en evacuación inmediata (10 km)</span></h1>
+    </div>
+    <div class="source-credit">Smithsonian GVP &amp; LandScan</div>
   </header>
 
   <!-- VISUALIZACIÓN PRINCIPAL -->
   <main class="stage-container">
     <div id="viz-stage" class="viz-stage">
-      
 
+      <!-- BARRA DE FILTRO Y FOCO ANALÍTICO (CÁPSULAS 17, 18 Y 22) -->
+      <aside class="filter-panel" aria-label="Controles de filtro y casos críticos">
+        <div class="filter-controls">
+          <span class="panel-label">Foco:</span>
+          <div class="filter-buttons" role="group" aria-label="Filtro de severidad">
+            <button id="btn-filter-crit" class="btn-filter active" data-filter="critical" type="button" title="Volcanes con VEI ≥ 4 y más de 10.000 habitantes en radio de evacuación (10 km)">
+              <span class="filter-icon">🚨</span> Riesgo Crítico <span class="filter-badge">61</span>
+            </button>
+            <button id="btn-filter-vei" class="btn-filter" data-filter="high_vei" type="button" title="Todos los volcanes con VEI histórico de gran explosividad (VEI ≥ 4)">
+              <span class="filter-icon">💥</span> Alto VEI (≥4) <span class="filter-badge">208</span>
+            </button>
+            <button id="btn-filter-all" class="btn-filter" data-filter="all" type="button" title="Catálogo exploratorio global completo">
+              <span class="filter-icon">🌐</span> Todos <span class="filter-badge">958</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="quick-focus">
+          <span class="panel-label">Casos Críticos:</span>
+          <div class="quick-chips" role="group" aria-label="Acceso directo a casos críticos">
+            <button class="quick-chip active" data-id="211010" type="button">Campi Flegrei (2.2M)</button>
+            <button class="quick-chip" data-id="343060" type="button">Ilopango (2.0M)</button>
+            <button class="quick-chip" data-id="344100" type="button">Masaya (990k)</button>
+            <button class="quick-chip" data-id="273070" type="button">Taal (717k)</button>
+            <button class="quick-chip" data-id="211020" type="button">Vesubio (676k)</button>
+            <button class="quick-chip" data-id="352011" type="button">Pululahua (534k)</button>
+            <button class="quick-chip" data-id="263250" type="button">Merapi (441k)</button>
+          </div>
+        </div>
+      </aside>
 
       <!-- CONTROLES DE ZOOM -->
       <div class="zoom-controls" aria-label="Controles de zoom">
@@ -44,6 +75,11 @@
 
       <!-- FICHA ESENCIAL DEL VOLCÁN -->
       <aside id="inspector-card" class="inspector-card" aria-label="Volcán seleccionado">
+        <div class="ins-badge-row">
+          <span id="det-badge" class="ins-badge badge-critical">🚨 RIESGO CRÍTICO</span>
+          <button id="btn-resound" class="btn-resound" type="button" title="Reproducir sonificación">🔊 Sonificar</button>
+        </div>
+
         <div class="ins-main">
           <h2 id="det-title" class="ins-name">Campi Flegrei</h2>
           <span id="det-country" class="ins-country">Italia</span>
@@ -63,6 +99,7 @@
 
       <!-- LEYENDA COMPACTA -->
       <div class="viz-legend" aria-label="Leyenda">
+        <div id="legend-status" class="legend-status">Mostrando: <strong>61</strong> volcanes críticos</div>
         <div class="legend-group">
           <span class="legend-title">VEI (Explosividad)</span>
           <div class="legend-gradient"></div>
