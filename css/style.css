@@ -114,126 +114,94 @@ body {
 
 
 /* ==========================================================================
-   BARRA DE FILTRO Y FOCO ANALÍTICO (CÁPSULAS 17, 18 Y 22)
+   TARJETAS NARRATIVAS FIJAS (RESPONDEN LA PREGUNTA DIRECTAMENTE)
    ========================================================================== */
 
-.filter-panel {
+.narrative-box {
   position: absolute;
-  top: 10px;
-  left: 12px;
-  max-width: calc(100% - 130px);
+  max-width: 250px;
   background: var(--bg-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-dim);
   border-radius: var(--radius-sm);
-  padding: 7px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  z-index: 25;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  padding: 8px 12px;
+  z-index: 15;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
 }
 
-.filter-controls, .quick-focus {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.box-north {
+  top: 14px;
+  left: 14px;
+  border-left: 3px solid #ff3d00;
 }
 
-.panel-label {
+.box-south {
+  top: 140px;
+  left: 14px;
+  border-left: 3px solid #e5a93b;
+}
+
+.narrative-tag {
   font-family: var(--font-mono);
-  font-size: 0.64rem;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 0.62rem;
+  font-weight: 700;
   color: var(--text-dim);
   letter-spacing: 0.05em;
-  white-space: nowrap;
+  margin-bottom: 2px;
 }
 
-.filter-buttons {
-  display: flex;
-  gap: 4px;
-}
-
-.btn-filter {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-dim);
-  border-radius: 4px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  padding: 3px 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: all 0.15s ease;
-}
-
-.btn-filter:hover {
-  background: rgba(255, 255, 255, 0.09);
+.narrative-title {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--text-main);
-  border-color: rgba(255, 255, 255, 0.2);
+  line-height: 1.2;
+  margin-bottom: 4px;
 }
 
-.btn-filter.active {
-  background: rgba(255, 61, 0, 0.18);
-  border-color: var(--magma-glow);
-  color: #fff;
+.narrative-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.narrative-desc strong {
+  color: var(--text-main);
   font-weight: 600;
 }
 
-.filter-badge {
-  background: rgba(0, 0, 0, 0.35);
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 0.65rem;
-  color: var(--ochre-warn);
+/* ==========================================================================
+   ELEMENTOS DE DESPLAZAMIENTO Y RÓTULOS (SIN SOLAPAMIENTO)
+   ========================================================================== */
+
+.volcano-leader {
+  stroke: rgba(244, 236, 224, 0.35);
+  stroke-width: 0.85px;
+  stroke-dasharray: 2, 2;
+  fill: none;
+  pointer-events: none;
 }
 
-.btn-filter.active .filter-badge {
-  background: var(--magma-glow);
-  color: #0e0d0c;
-  font-weight: 700;
+.volcano-anchor {
+  fill: #ff3d00;
+  stroke: #ffffff;
+  stroke-width: 0.6px;
+  pointer-events: none;
 }
 
-.quick-chips {
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.quick-chips::-webkit-scrollbar {
-  display: none;
-}
-
-.quick-chip {
-  background: transparent;
-  border: 1px solid rgba(244, 236, 224, 0.08);
-  border-radius: 999px;
-  color: var(--text-muted);
+.volcano-direct-label {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  padding: 2px 8px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.12s ease;
-}
-
-.quick-chip:hover {
-  border-color: var(--ochre-warn);
-  color: var(--text-main);
-  background: rgba(229, 169, 59, 0.08);
-}
-
-.quick-chip.active {
-  background: var(--ochre-warn);
-  border-color: var(--ochre-warn);
-  color: #0e0d0c;
-  font-weight: 700;
+  font-size: 9.5px;
+  font-weight: 600;
+  fill: #f4ece0;
+  paint-order: stroke;
+  stroke: #0e0d0c;
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ==========================================================================

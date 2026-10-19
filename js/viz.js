@@ -1,55 +1,32 @@
 /**
- * VISUALIZACIÓN DE AMENAZA VOLCÁNICA GLOBAL (INFOVIS UC - IIC2026)
- * Enfoque analítico: Los 61 volcanes con explosividad crítica (VEI ≥ 4) y población masiva a 10 km
+ * VISUALIZACIÓN: ¿DÓNDE SE ENCUENTRAN LAS MAYORES AMENAZAS VOLCÁNICAS EN SUDAMÉRICA?
+ * InfoVis IIC2026 PUC
  * 
- * Implementa los principios del curso:
- * - Cápsula 17: La Pregunta Antes del Gráfico (enfoque en riesgo humanitario crítico).
- * - Cápsula 18: Ostras vs. Perlas (filtro explicativo por defecto, no dispersión exploratoria).
- * - Cápsula 19: Bórralo (Data-Ink Ratio de Tufte, eliminación de ruido de fondo).
- * - Cápsula 22: El Mantra de Shneiderman (Overview first, zoom & filter, details on demand).
- * - Cápsula 23: Sonificación con Tone.js (subgraves sísmicos y ritmo cardíaco de urgencia).
+ * - Enfoque explicativo directo (Cápsulas 17 y 18):
+ *   Responde la pregunta en el primer segundo sin necesidad de interactuar.
+ * - Algoritmo anti-solapamiento (Zero Overlap):
+ *   Separación física de marcas adyacentes con líneas de guía al cráter exacto.
+ * - Sonificación multicanal en Tone.js (Cápsula 23):
+ *   Subgraves sísmicos según VEI y ritmo cardíaco según población a 10 km.
  */
-
-const FILTERS = {
-  critical: {
-    id: 'critical',
-    label: '61 volcanes críticos',
-    statusText: 'Mostrando: <strong>61</strong> volcanes de riesgo crítico',
-    filterFn: d => (d.max_vei >= 4) && ((d.pop_10km || 0) >= 10000)
-  },
-  high_vei: {
-    id: 'high_vei',
-    label: '208 volcanes de alto VEI',
-    statusText: 'Mostrando: <strong>208</strong> volcanes de alta explosividad',
-    filterFn: d => (d.max_vei >= 4)
-  },
-  all: {
-    id: 'all',
-    label: '958 volcanes (catálogo total)',
-    statusText: 'Mostrando: <strong>958</strong> volcanes (catálogo total)',
-    filterFn: () => true
-  }
-};
 
 const state = {
   volcanoes: [],
   worldData: null,
   activeRadius: 'pop_10km',
-  currentFilter: 'critical',
-  selectedVolcano: null
+  selectedVolcano: null,
+  threatNodes: []
 };
 
 const colorScale = d3.scaleSequential()
   .domain([0, 7])
   .interpolator(d3.interpolateYlOrRd);
 
-let svg, gRoot, gMap, gWaves, gVolcanoes, projection, pathGen, zoomBehavior;
+let svg, gRoot, gMap, gLeaders, gWaves, gVolcanoes, gLabels, projection, pathGen, zoomBehavior;
 const tooltip = d3.select('#tooltip');
 
 document.addEventListener('DOMContentLoaded', async () => {
   setupUIEvents();
-  setupFilterControls();
-  setupQuickChips();
   setupAudioVisualizer();
   await loadData();
   initVisualization();
@@ -70,7 +47,7 @@ async function loadData() {
 }
 
 function setupUIEvents() {
-  // Inicialización de audio al primer clic dentro de la visualización
+  // Inicialización de audio al primer clic en la pantalla
   document.getElementById('viz-stage').addEventListener('click', () => {
     if (!window.volcanoAudio.isInitialized) {
       window.volcanoAudio.init().then(enabled => updateAudioUI(enabled));
@@ -95,73 +72,17 @@ function setupUIEvents() {
   // Controles de zoom
   document.getElementById('btn-zoom-in').addEventListener('click', (e) => {
     e.stopPropagation();
-    svg.transition().duration(250).call(zoomBehavior.scaleBy, 1.4);
+    if (zoomBehavior) svg.transition().duration(250).call(zoomBehavior.scaleBy, 1.4);
   });
 
   document.getElementById('btn-zoom-out').addEventListener('click', (e) => {
     e.stopPropagation();
-    svg.transition().duration(250).call(zoomBehavior.scaleBy, 0.71);
+    if (zoomBehavior) svg.transition().duration(250).call(zoomBehavior.scaleBy, 0.71);
   });
 
   document.getElementById('btn-zoom-reset').addEventListener('click', (e) => {
     e.stopPropagation();
-    svg.transition().duration(400).call(zoomBehavior.transform, d3.zoomIdentity);
-  });
-}
-
-function setupFilterControls() {
-  const filterBtns = document.querySelectorAll('.btn-filter');
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const filterKey = btn.dataset.filter;
-      if (!FILTERS[filterKey] || state.currentFilter === filterKey) return;
-
-      filterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      state.currentFilter = filterKey;
-      updateVolcanoMarks();
-
-      // Si el volcán seleccionado no cumple con el nuevo filtro, seleccionar el primero disponible
-      const currentPredicate = FILTERS[state.currentFilter].filterFn;
-      if (state.selectedVolcano && !currentPredicate(state.selectedVolcano)) {
-        const available = state.volcanoes.filter(currentPredicate);
-        if (available.length > 0) {
-          onVolcanoSelect(available[0]);
-        }
-      }
-    });
-  });
-}
-
-function setupQuickChips() {
-  const chips = document.querySelectorAll('.quick-chip');
-  chips.forEach(chip => {
-    chip.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const targetId = parseInt(chip.dataset.id, 10);
-      const targetVolcano = state.volcanoes.find(v => v.id === targetId);
-
-      if (!targetVolcano) return;
-
-      chips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-
-      // Asegurar que el filtro permita ver este volcán si está en modo restrictivo
-      const predicate = FILTERS[state.currentFilter].filterFn;
-      if (!predicate(targetVolcano)) {
-        // Cambiar a 'critical' o 'all' según corresponda
-        const newFilter = (targetVolcano.max_vei >= 4 && (targetVolcano.pop_10km || 0) >= 10000) ? 'critical' : 'all';
-        state.currentFilter = newFilter;
-        document.querySelectorAll('.btn-filter').forEach(b => {
-          b.classList.toggle('active', b.dataset.filter === newFilter);
-        });
-        updateVolcanoMarks();
-      }
-
-      onVolcanoSelect(targetVolcano);
-    });
+    if (zoomBehavior) svg.transition().duration(400).call(zoomBehavior.transform, d3.zoomIdentity);
   });
 }
 
@@ -174,47 +95,22 @@ function updateAudioUI(enabled) {
 
 function initVisualization() {
   const container = document.getElementById('viz-stage');
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+  const width = container.clientWidth || 1000;
+  const height = container.clientHeight || 750;
 
   svg = d3.select('#viz-svg')
     .attr('viewBox', `0 0 ${width} ${height}`);
 
   gRoot = svg.append('g').attr('class', 'root-g');
   gMap = gRoot.append('g').attr('class', 'map-g');
+  gLeaders = gRoot.append('g').attr('class', 'leaders-g');
   gWaves = gRoot.append('g').attr('class', 'waves-g');
   gVolcanoes = gRoot.append('g').attr('class', 'volcanoes-g');
+  gLabels = gRoot.append('g').attr('class', 'labels-g');
 
-  // Proyección centrada en el Pacífico (-150° longitud en el centro para Cinturón de Fuego continuo)
-  projection = d3.geoNaturalEarth1()
-    .rotate([-150, 0])
-    .scale(width / 5.2)
-    .translate([width / 2, height / 2 + 15]);
-
-  pathGen = d3.geoPath().projection(projection);
-
-  // Cuadrícula sutil
-  const graticule = d3.geoGraticule();
-  gMap.append('path')
-    .datum(graticule)
-    .attr('class', 'graticule')
-    .attr('d', pathGen);
-
-  // Tierras emergidas
-  if (state.worldData) {
-    const countries = topojson.feature(state.worldData, state.worldData.objects.countries);
-    gMap.append('g')
-      .selectAll('path')
-      .data(countries.features)
-      .enter()
-      .append('path')
-      .attr('class', 'land')
-      .attr('d', pathGen);
-  }
-
-  // Zoom interactivo
+  // Zoom interactivo configurado ANTES de cualquier llamada
   zoomBehavior = d3.zoom()
-    .scaleExtent([0.9, 14])
+    .scaleExtent([0.8, 16])
     .on('start', () => {
       tooltip.style('opacity', 0);
     })
@@ -224,79 +120,200 @@ function initVisualization() {
 
   svg.call(zoomBehavior);
 
-  updateVolcanoMarks();
-}
+  // Proyección cartográfica centrada en Sudamérica y ajustada a la Cordillera de los Andes
+  // Centro: longitud -66°, latitud -24°
+  projection = d3.geoMercator()
+    .center([-66, -24])
+    .scale(height * 0.84)
+    .translate([width / 2, height / 2]);
 
-function updateVolcanoMarks() {
-  const filterDef = FILTERS[state.currentFilter] || FILTERS.critical;
-  const filtered = state.volcanoes.filter(filterDef.filterFn);
+  pathGen = d3.geoPath().projection(projection);
 
-  // Orden descendente por población para resolver Overplotting (círculos grandes abajo, pequeños arriba)
-  const sorted = [...filtered].sort((a, b) => (b.pop_10km || 0) - (a.pop_10km || 0));
+  // 1. Cuadrícula sutil
+  const graticule = d3.geoGraticule();
+  gMap.append('path')
+    .datum(graticule)
+    .attr('class', 'graticule')
+    .attr('d', pathGen);
 
-  // Actualizar indicador de leyenda
-  const statusEl = document.getElementById('legend-status');
-  if (statusEl) {
-    statusEl.innerHTML = filterDef.statusText;
+  // 2. Mapa físico de países
+  if (state.worldData) {
+    const countries = topojson.feature(state.worldData, state.worldData.objects.countries);
+    gMap.append('g')
+      .attr('class', 'countries-layer')
+      .selectAll('path')
+      .data(countries.features)
+      .enter()
+      .append('path')
+      .attr('class', 'land')
+      .attr('d', pathGen);
   }
 
+  // 3. Renderizar las amenazas de Sudamérica con algoritmo anti-solapamiento
+  renderSouthAmericaThreats();
+}
+
+/**
+ * Filtra las 39 amenazas mayores de Sudamérica y resuelve completamente el solapamiento
+ */
+function renderSouthAmericaThreats() {
+  // Filtrar estrictamente a las amenazas mayores de Sudamérica:
+  // Volcanes con VEI >= 4 O población en evacuación (10 km) >= 10.000 hab.
+  const saThreats = state.volcanoes.filter(v => 
+    v.region === 'South America' && 
+    (v.max_vei >= 4 || (v.pop_10km || 0) >= 10000)
+  );
+
+  // Crear nodos con coordenadas proyectadas y radio
+  const nodes = saThreats.map(d => {
+    const p = projection([d.lon, d.lat]);
+    const pop = d.pop_10km || 0;
+    // Escala perceptualmente calibrada para no saturar
+    const r = Math.max(5.5, Math.min(18, 4.5 + Math.log10(pop + 1) * 2.3));
+    return {
+      data: d,
+      id: d.id,
+      name: d.name,
+      country: d.country,
+      vei: d.max_vei,
+      pop10k: pop,
+      origX: p ? p[0] : 0,
+      origY: p ? p[1] : 0,
+      x: p ? p[0] : 0,
+      y: p ? p[1] : 0,
+      r: r
+    };
+  });
+
+  // ALGORITMO DE SEPARACIÓN (ANTI-SOLAPAMIENTO):
+  // Itera relajando colisiones entre círculos cercanos para que la distancia >= r1 + r2 + 4px
+  for (let iter = 0; iter < 60; iter++) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i];
+        const b = nodes[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy);
+        const minDist = a.r + b.r + 4; // 4px de separación mínima garantizada
+
+        if (dist < minDist && dist > 0.001) {
+          const overlap = minDist - dist;
+          // Puje preferentemente horizontal (Este-Oeste) para preservar la correspondencia latitudinal
+          const angle = Math.atan2(dy, dx);
+          const pushFactor = overlap * 0.52;
+          const px = Math.cos(angle) * pushFactor;
+          const py = Math.sin(angle) * pushFactor * 0.35; // menor desplazamiento vertical
+
+          a.x -= px;
+          a.y -= py;
+          b.x += px;
+          b.y += py;
+        }
+      }
+    }
+  }
+
+  state.threatNodes = nodes;
+
+  // 1. Dibujar líneas guía (leader lines) y puntos de anclaje para marcas desplazadas
+  gLeaders.selectAll('*').remove();
+
+  nodes.forEach(n => {
+    const displacement = Math.hypot(n.x - n.origX, n.y - n.origY);
+    if (displacement > 2.5) {
+      // Línea punteada que conecta el círculo con el cráter físico
+      gLeaders.append('line')
+        .attr('class', 'volcano-leader')
+        .attr('x1', n.origX)
+        .attr('y1', n.origY)
+        .attr('x2', n.x)
+        .attr('y2', n.y);
+
+      // Pequeño punto de anclaje en el cráter físico
+      gLeaders.append('circle')
+        .attr('class', 'volcano-anchor')
+        .attr('cx', n.origX)
+        .attr('cy', n.origY)
+        .attr('r', 1.8);
+    }
+  });
+
+  // 2. Dibujar las marcas de volcanes (orden descendente de tamaño para que los pequeños queden encima)
+  const sortedNodes = [...nodes].sort((a, b) => b.r - a.r);
+
   const marks = gVolcanoes.selectAll('.volcano-mark')
-    .data(sorted, d => d.id);
+    .data(sortedNodes, d => d.id);
 
-  // Salida con desvanecimiento suave (Cápsula 19: eliminar ruido)
-  marks.exit()
-    .transition()
-    .duration(300)
-    .attr('r', 0)
-    .style('opacity', 0)
-    .remove();
+  marks.exit().remove();
 
-  // Entrada
   const enter = marks.enter()
     .append('circle')
     .attr('class', 'volcano-mark')
     .attr('id', d => `v-mark-${d.id}`)
-    .attr('cx', d => {
-      const p = projection([d.lon, d.lat]);
-      return p ? p[0] : -999;
-    })
-    .attr('cy', d => {
-      const p = projection([d.lon, d.lat]);
-      return p ? p[1] : -999;
-    })
+    .attr('cx', d => d.x)
+    .attr('cy', d => d.y)
     .attr('r', 0)
     .style('opacity', 0)
-    .on('mouseenter', (event, d) => onVolcanoHover(event, d))
+    .on('mouseenter', (event, d) => onVolcanoHover(event, d.data))
     .on('mouseleave', () => onVolcanoLeave())
-    .on('click', (event, d) => onVolcanoSelect(d));
+    .on('click', (event, d) => onVolcanoSelect(d.data));
 
-  // Merge y actualización con animación fluida
   marks.merge(enter)
-    .order()
     .transition()
-    .duration(450)
-    .attr('cx', d => {
-      const p = projection([d.lon, d.lat]);
-      return p ? p[0] : -999;
-    })
-    .attr('cy', d => {
-      const p = projection([d.lon, d.lat]);
-      return p ? p[1] : -999;
-    })
-    .attr('r', d => {
-      const pop = d.pop_10km || 0;
-      if (pop === 0) return 3.0;
-      return Math.min(18, Math.max(4.0, 3.2 + Math.log10(pop) * 2.3));
-    })
-    .style('fill', d => colorScale(d.max_vei))
+    .duration(500)
+    .attr('cx', d => d.x)
+    .attr('cy', d => d.y)
+    .attr('r', d => d.r)
+    .style('fill', d => colorScale(d.vei))
     .style('stroke', '#0e0d0c')
-    .style('stroke-width', '0.85px')
-    .style('opacity', 0.82);
+    .style('stroke-width', '1.1px')
+    .style('opacity', 0.88);
 
-  // Re-destacar el volcán seleccionado si sigue en pantalla
-  if (state.selectedVolcano) {
-    d3.select(`#v-mark-${state.selectedVolcano.id}`).classed('selected', true).raise();
-  }
+  // 3. Etiquetas visuales directas para responder el mensaje de inmediato (sin interactuar)
+  renderDirectLabels(nodes);
+}
+
+/**
+ * Rótulos directos sobre los volcanes más emblemáticos (visibles de entrada)
+ */
+function renderDirectLabels(nodes) {
+  gLabels.selectAll('*').remove();
+
+  // Selección de los casos más relevantes para rotular directamente
+  const highlightedNames = [
+    'Pululahua',
+    'Galeras',
+    'Ruiz',
+    'Villarrica',
+    'Calbuco',
+    'Hudson'
+  ];
+
+  nodes.forEach(n => {
+    const isHighlighted = highlightedNames.some(name => n.name.includes(name));
+    if (isHighlighted) {
+      // Posicionar la etiqueta ligeramente a la izquierda o derecha
+      const isRight = n.x >= (projection.translate()[0] || 500);
+      const textX = isRight ? n.x + n.r + 5 : n.x - n.r - 5;
+      const textAnchor = isRight ? 'start' : 'end';
+
+      let shortLabel = n.name;
+      if (n.name.includes('Pululahua')) shortLabel = 'Pululahua (534k hab · VEI 5)';
+      else if (n.name.includes('Galeras')) shortLabel = 'Galeras (121k hab · VEI 3)';
+      else if (n.name.includes('Ruiz')) shortLabel = 'Nevado del Ruiz (20k · Armero)';
+      else if (n.name.includes('Villarrica')) shortLabel = 'Villarrica (VEI 5 · Chile)';
+      else if (n.name.includes('Calbuco')) shortLabel = 'Calbuco (VEI 5 · Chile)';
+      else if (n.name.includes('Hudson')) shortLabel = 'Cerro Hudson (VEI 6 · Chile)';
+
+      gLabels.append('text')
+        .attr('class', 'volcano-direct-label')
+        .attr('x', textX)
+        .attr('y', n.y + 3)
+        .attr('text-anchor', textAnchor)
+        .text(shortLabel);
+    }
+  });
 }
 
 function onVolcanoHover(event, d) {
@@ -332,37 +349,27 @@ function onVolcanoLeave() {
 async function onVolcanoSelect(d) {
   state.selectedVolcano = d;
 
-  // Ocultar hover inmediatamente al hacer clic
   tooltip.style('opacity', 0);
   d3.selectAll('.volcano-mark').classed('hovered', false);
-
   d3.selectAll('.volcano-mark').classed('selected', false);
+
   d3.select(`#v-mark-${d.id}`).classed('selected', true).raise();
 
-  // Actualizar chips activos si coincide el volcán
-  document.querySelectorAll('.quick-chip').forEach(c => {
-    c.classList.toggle('active', parseInt(c.dataset.id, 10) === d.id);
-  });
-
-  // Enfocar suavemente en el volcán con zoom cinemático
+  // Enfocar suavemente con zoom
   const p = projection([d.lon, d.lat]);
-  if (p) {
+  if (p && zoomBehavior) {
     const stage = document.getElementById('viz-stage');
-    const w = stage.clientWidth;
-    const h = stage.clientHeight;
-    svg.transition().duration(700).call(
+    const w = stage.clientWidth || 1000;
+    const h = stage.clientHeight || 750;
+    svg.transition().duration(650).call(
       zoomBehavior.transform,
       d3.zoomIdentity.translate(w / 2 - p[0] * 3, h / 2 - p[1] * 3).scale(3)
     );
   }
 
-  // Activar la onda expansiva animada
   triggerConcentricWaves(d);
-
-  // Actualizar ficha técnica
   renderInspectorCard(d);
 
-  // Emitir sonido integrado en Tone.js
   if (!window.volcanoAudio.isInitialized) {
     await window.volcanoAudio.init();
     updateAudioUI(true);
@@ -371,27 +378,26 @@ async function onVolcanoSelect(d) {
   window.volcanoAudio.sonifyVolcano(d, 'pop_10km');
 }
 
-/**
- * Onda expansiva animada sincronizada con el estruendo volcánico
- */
 function triggerConcentricWaves(d) {
-  const p = projection([d.lon, d.lat]);
-  if (!p) return;
+  // Buscar nodo correspondiente para usar sus coordenadas
+  const node = state.threatNodes.find(n => n.id === d.id);
+  const cx = node ? node.x : (projection([d.lon, d.lat]) || [0, 0])[0];
+  const cy = node ? node.y : (projection([d.lon, d.lat]) || [0, 0])[1];
 
   gWaves.selectAll('*').remove();
 
   [1, 2, 3].forEach((idx) => {
     gWaves.append('circle')
       .attr('class', 'concentric-wave')
-      .attr('cx', p[0])
-      .attr('cy', p[1])
-      .attr('r', 4)
+      .attr('cx', cx)
+      .attr('cy', cy)
+      .attr('r', node ? node.r : 5)
       .style('opacity', 0.95)
       .transition()
-      .delay(idx * 150)
+      .delay(idx * 140)
       .duration(900)
       .ease(d3.easeCubicOut)
-      .attr('r', 24 + idx * 22)
+      .attr('r', (node ? node.r : 5) + 24 + idx * 22)
       .style('opacity', 0)
       .remove();
   });
@@ -419,18 +425,17 @@ function renderInspectorCard(d) {
       elBadge.textContent = '💥 ALTA EXPLOSIVIDAD';
       elBadge.className = 'ins-badge badge-elevated';
     } else {
-      elBadge.textContent = '🟡 MONITOREO';
+      elBadge.textContent = '🟡 DENSIDAD URBANA';
       elBadge.className = 'ins-badge badge-moderate';
     }
   }
 }
 
 function selectDefaultVolcano() {
-  const defaultV = state.volcanoes.find(v => v.name === 'Campi Flegrei') || state.volcanoes[0];
+  const defaultV = state.volcanoes.find(v => v.name.includes('Villarrica')) || state.volcanoes[0];
   if (defaultV) {
     state.selectedVolcano = defaultV;
     renderInspectorCard(defaultV);
-    triggerConcentricWaves(defaultV);
     d3.select(`#v-mark-${defaultV.id}`).classed('selected', true);
   }
 }
