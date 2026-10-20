@@ -219,7 +219,7 @@ function initVisualization() {
 }
 
 /**
- * Filtra las 39 amenazas mayores de Sudamérica y resuelve el solapamiento con proyección de largo uniforme
+ * Filtra las 39 amenazas mayores de Sudamérica y resuelve el solapamiento con proyección limpia y no cruzada
  */
 function renderSouthAmericaThreats() {
   // Filtrar estrictamente a las amenazas mayores de Sudamérica:
@@ -228,9 +228,6 @@ function renderSouthAmericaThreats() {
     v.region === 'South America' && 
     (v.max_vei >= 4 || (v.pop_10km || 0) >= 10000)
   );
-
-  // Largo uniforme de la línea punteada para todos los volcanes proyectados (62px)
-  const LINE_LEN = 62;
 
   // Crear nodos con coordenadas proyectadas y radio
   const nodes = saThreats.map(d => {
@@ -254,7 +251,7 @@ function renderSouthAmericaThreats() {
     };
   });
 
-  // Detectar volcanes que se solaparían si se dibujaran directamente sobre su cráter
+  // 1. Detectar volcanes que se solaparían si se dibujaran directamente sobre su cráter
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const d = Math.hypot(nodes[i].origX - nodes[j].origX, nodes[i].origY - nodes[j].origY);
@@ -265,60 +262,140 @@ function renderSouthAmericaThreats() {
     }
   }
 
-  // Ordenar de norte a sur para inicializar abanicos ordenados
-  nodes.sort((a, b) => a.origY - b.origY);
-
-  // Inicialización de la proyección: fanning hacia el oeste (Océano Pacífico)
-  // y alternancia leve para repartir los densos cúmulos de Ecuador y el sur de Chile
-  nodes.forEach((n, idx) => {
-    if (n.needsProjection) {
-      const side = idx % 2 === 0 ? -1 : 1;
-      const angle = side === -1 ? Math.PI + ((idx % 4) - 1.5) * 0.35 : ((idx % 4) - 1.5) * 0.35;
-      n.x = n.origX + Math.cos(angle) * LINE_LEN;
-      n.y = n.origY + Math.sin(angle) * LINE_LEN;
+  // 2. Asignación bilateral limpia hacia fuera (sin cruzar la cordillera)
+  // Ecuador y Colombia: vertiente oriental al este (+1), vertiente occidental al oeste (-1)
+  // Perú y Chile: proyección hacia el oeste (-1, Océano Pacífico, despejado y sin interferencias)
+  nodes.forEach(n => {
+    if (!n.needsProjection) return;
+    let dir = -1; // Oeste por defecto (Pacífico)
+    if (n.country === 'Ecuador' && n.data.lon > -78.35) {
+      dir = 1; // Este (Amazonía / interior)
+    } else if (n.country === 'Colombia' && n.data.lon > -75.32) {
+      dir = 1; // Este (interior)
     }
+    n.dir = dir;
   });
 
-  // Relajación de colisiones con preservación estricta de largo uniforme (LINE_LEN)
-  for (let iter = 0; iter < 250; iter++) {
+  // Separar grupos Oeste y Este
+  const westGroup = nodes.filter(n => n.needsProjection && n.dir === -1);
+  const eastGroup = nodes.filter(n => n.needsProjection && n.dir === 1);
+
+  // Función para proyectar hacia afuera con escalonamiento de distancias y orden monótono en Y
+  function layoutGroup(group, sign) {
+    if (group.length === 0) return;
+    // Ordenar estrictamente de norte a sur
+    group.sort((a, b) => a.origY - b.origY);
+
+    // Distancias escalonadas hacia afuera (permiten alejarse más según densidad local)
+    const tiers = [75, 135, 85, 145];
+    group.forEach((n, idx) => {
+      const dist = tiers[idx % tiers.length];
+      n.targetDist = dist;
+      n.x = n.origX + sign * dist;
+      n.y = n.origY;
+    });
+
+    // Relajación vertical para garantizar separación de círculos preservando orden
+    for (let iter = 0; iter < 150; iter++) {
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const a = group[i];
+          const b = group[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy);
+          const reqDist = a.r + b.r + 5;
+          if (dist < reqDist) {
+            const overlap = reqDist - dist;
+            const py = (dy >= 0 ? 1 : -1) * overlap * 0.6;
+            a.y -= py;
+            b.y += py;
+          }
+        }
+      }
+      // Asegurar orden monótono y[i+1] >= y[i] + 1 para evitar inversiones de líneas
+      for (let i = 0; i < group.length - 1; i++) {
+        if (group[i + 1].y < group[i].y + 1) {
+          group[i + 1].y = group[i].y + 1;
+        }
+      }
+    }
+  }
+
+  layoutGroup(westGroup, -1);
+  layoutGroup(eastGroup, 1);
+
+  // 3. Algoritmo 2-opt para eliminar cualquier cruce de líneas
+  function ccw(p1, p2, p3) {
+    return (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x);
+  }
+
+  function linesCross(p1, p2, p3, p4) {
+    if ((Math.abs(p1.x - p3.x) < 0.1 && Math.abs(p1.y - p3.y) < 0.1) ||
+        (Math.abs(p1.x - p4.x) < 0.1 && Math.abs(p1.y - p4.y) < 0.1) ||
+        (Math.abs(p2.x - p3.x) < 0.1 && Math.abs(p2.y - p3.y) < 0.1) ||
+        (Math.abs(p2.x - p4.x) < 0.1 && Math.abs(p2.y - p4.y) < 0.1)) return false;
+    return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
+  }
+
+  function uncrossLines(group) {
+    let crossed = true;
+    let passes = 0;
+    while (crossed && passes < 30) {
+      crossed = false;
+      passes++;
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const a = group[i];
+          const b = group[j];
+          if (linesCross({x: a.origX, y: a.origY}, {x: a.x, y: a.y},
+                         {x: b.origX, y: b.origY}, {x: b.x, y: b.y})) {
+            const tx = a.x; const ty = a.y;
+            a.x = b.x; a.y = b.y;
+            b.x = tx; b.y = ty;
+            crossed = true;
+          }
+        }
+      }
+    }
+  }
+
+  uncrossLines(westGroup);
+  uncrossLines(eastGroup);
+
+  // 4. Prevenir colisión de círculos proyectados con cráteres fijos no proyectados
+  for (let iter = 0; iter < 40; iter++) {
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i];
         const b = nodes[j];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dist = Math.hypot(dx, dy);
-        const minDist = a.r + b.r + 4; // 4px de separación mínima garantizada
-
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        const minDist = a.r + b.r + 4;
         if (dist < minDist && dist > 0.001) {
           const overlap = minDist - dist;
-          const px = (dx / dist) * overlap * 0.5;
-          const py = (dy / dist) * overlap * 0.5;
-          if (a.needsProjection) { a.x -= px; a.y -= py; }
-          if (b.needsProjection) { b.x += px; b.y += py; }
+          if (a.needsProjection && !b.needsProjection) {
+            a.x += a.dir * overlap;
+          } else if (!a.needsProjection && b.needsProjection) {
+            b.x += b.dir * overlap;
+          }
         }
       }
     }
-
-    // Restricción: mantener largo estrictamente idéntico (62px) para todos los proyectados
-    nodes.forEach(n => {
-      if (n.needsProjection) {
-        const curDist = Math.hypot(n.x - n.origX, n.y - n.origY) || 1;
-        n.x = n.origX + ((n.x - n.origX) / curDist) * LINE_LEN;
-        n.y = n.origY + ((n.y - n.origY) / curDist) * LINE_LEN;
-      }
-    });
   }
+
+  uncrossLines(westGroup);
+  uncrossLines(eastGroup);
 
   state.threatNodes = nodes;
 
-  // 1. Dibujar líneas guía uniformes y puntos de anclaje (cráter) destacados
+  // 5. Dibujar líneas punteadas grises y puntos de anclaje discretos (sin remarcar)
   gLeaders.selectAll('*').remove();
 
   nodes.forEach(n => {
     if (n.needsProjection) {
-      // Línea punteada de largo uniforme y evidente
+      // Línea punteada gris tenue y limpia
       gLeaders.append('line')
+        .datum(n.data)
         .attr('class', 'volcano-leader')
         .attr('id', `leader-${n.id}`)
         .attr('x1', n.origX)
@@ -326,20 +403,15 @@ function renderSouthAmericaThreats() {
         .attr('x2', n.x)
         .attr('y2', n.y);
 
-      // Símbolo de cráter físico en la cordillera (anillo exterior + núcleo)
+      // Cráter real en la montaña: pequeño punto discreto (sin anillos llamativos)
       const anchorG = gLeaders.append('g')
+        .datum(n.data)
         .attr('class', 'volcano-anchor-group')
         .attr('id', `anchor-${n.id}`)
-        .attr('title', `${n.name} (cráter real)`)
+        .attr('title', `${n.name} (cráter)`)
         .on('mouseenter', (event) => onVolcanoHover(event, n.data))
         .on('mouseleave', () => onVolcanoLeave())
         .on('click', () => onVolcanoSelect(n.data));
-
-      anchorG.append('circle')
-        .attr('class', 'volcano-anchor-ring')
-        .attr('cx', n.origX)
-        .attr('cy', n.origY)
-        .attr('r', 3.8);
 
       anchorG.append('circle')
         .attr('class', 'volcano-anchor-dot')
@@ -349,7 +421,7 @@ function renderSouthAmericaThreats() {
     }
   });
 
-  // 2. Dibujar las marcas de volcanes (orden descendente de tamaño para que los pequeños queden encima)
+  // 6. Dibujar las marcas de volcanes (orden descendente de tamaño para que los pequeños queden encima)
   const sortedNodes = [...nodes].sort((a, b) => b.r - a.r);
 
   const marks = gVolcanoes.selectAll('.volcano-mark')
@@ -380,7 +452,7 @@ function renderSouthAmericaThreats() {
     .style('stroke-width', '1.1px')
     .style('opacity', 0.88);
 
-  // 3. Etiquetas visuales directas para responder el mensaje de inmediato (sin interactuar)
+  // 7. Etiquetas visuales directas para responder el mensaje de inmediato (sin interactuar)
   renderDirectLabels(nodes);
 }
 
@@ -403,9 +475,9 @@ function renderDirectLabels(nodes) {
   nodes.forEach(n => {
     const isHighlighted = highlightedNames.some(name => n.name.includes(name));
     if (isHighlighted) {
-      // Posicionar la etiqueta ligeramente a la izquierda o derecha
-      const isRight = n.x >= (projection.translate()[0] || 500);
-      const textX = isRight ? n.x + n.r + 5 : n.x - n.r - 5;
+      // Posicionar la etiqueta hacia el exterior del círculo de datos
+      const isRight = n.needsProjection ? (n.dir === 1) : (n.x >= (projection.translate()[0] || 500));
+      const textX = isRight ? n.x + n.r + 6 : n.x - n.r - 6;
       const textAnchor = isRight ? 'start' : 'end';
 
       let shortLabel = n.name;

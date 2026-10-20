@@ -267,23 +267,23 @@ body {
   width: 9px;
   height: 9px;
   background: transparent;
-  border: 1.2px dashed #ff9100;
+  border: 1.2px dashed rgba(244, 236, 224, 0.55);
 }
 
 .crater-symbol {
-  color: #ff3d00;
+  color: rgba(244, 236, 224, 0.7);
   font-weight: 700;
 }
 
 /* ==========================================================================
-   PROYECCIÓN DE VOLCANES Y PUNTOS DE ANCLAJE (LARGO UNIFORME Y EVIDENTE)
+   PROYECCIÓN LIMPIA DE VOLCANES Y PUNTOS DE CRÁTER DISCRETOS
    ========================================================================== */
 
 .volcano-leader {
-  stroke: #ff9100;
-  stroke-width: 1.5px;
-  stroke-dasharray: 4, 3;
-  opacity: 0.78;
+  stroke: rgba(244, 236, 224, 0.45);
+  stroke-width: 1.1px;
+  stroke-dasharray: 3, 3;
+  opacity: 0.85;
   fill: none;
   pointer-events: none;
   transition: opacity 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
@@ -291,7 +291,7 @@ body {
 
 .volcano-leader.highlighted {
   stroke: #ffffff;
-  stroke-width: 2.2px;
+  stroke-width: 1.8px;
   stroke-dasharray: none;
   opacity: 1;
 }
@@ -300,30 +300,16 @@ body {
   cursor: pointer;
 }
 
-.volcano-anchor-ring {
-  fill: rgba(255, 61, 0, 0.22);
-  stroke: #ff3d00;
-  stroke-width: 1.3px;
-  transition: all 0.15s ease;
-}
-
 .volcano-anchor-dot {
-  fill: #ffffff;
+  fill: rgba(244, 236, 224, 0.55);
+  stroke: none;
   transition: all 0.15s ease;
-}
-
-.volcano-anchor-group:hover .volcano-anchor-ring,
-.volcano-anchor-group.highlighted .volcano-anchor-ring {
-  fill: rgba(255, 234, 0, 0.45);
-  stroke: #ffea00;
-  stroke-width: 2.2px;
-  r: 5px;
 }
 
 .volcano-anchor-group:hover .volcano-anchor-dot,
 .volcano-anchor-group.highlighted .volcano-anchor-dot {
-  fill: #ffea00;
-  r: 2.2px;
+  fill: #ffffff;
+  r: 2.6px;
 }
 
 .volcano-direct-label {
@@ -734,13 +720,13 @@ body {
 }
 
 .legend-anchor-symbol {
-  color: #ff3d00;
+  color: rgba(244, 236, 224, 0.65);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
 .legend-dash-symbol {
-  color: #ff9100;
+  color: rgba(244, 236, 224, 0.45);
   letter-spacing: -1.2px;
 }
 
