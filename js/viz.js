@@ -152,9 +152,27 @@ function initVisualization() {
     .attr('class', 'graticule')
     .attr('d', pathGen);
 
-  // 4. Mapa físico de países con resalte continental
+  // 4. Paleta tonal armonizada para diferenciar claramente los países vecinos de Sudamérica
+  const countryPalette = {
+    '032': '#27211c', // Argentina (tierra cálido)
+    '152': '#19222c', // Chile (azul pizarra oscuro)
+    '068': '#212520', // Bolivia (musgo granítico oscuro)
+    '604': '#292026', // Perú (ciruela / berenjena profundo)
+    '218': '#1b2723', // Ecuador (verde abeto oscuro)
+    '170': '#28221d', // Colombia (café umber oscuro)
+    '862': '#221e29', // Venezuela (violeta obsidiana)
+    '076': '#1d231b', // Brasil (oliva bosque profundo)
+    '600': '#27241b', // Paraguay (bronce ámbar oscuro)
+    '858': '#1c2428', // Uruguay (azul marino pizarra)
+    '328': '#1f2220', // Guyana
+    '740': '#221f22', // Surinam
+    '238': '#1c1f23'  // Falkland
+  };
+
+  // 5. Capa de países con colores diferenciados y respuesta interactiva
   if (state.worldData) {
     const countries = topojson.feature(state.worldData, state.worldData.objects.countries);
+
     gMap.append('g')
       .attr('class', 'countries-layer')
       .selectAll('path')
@@ -162,7 +180,56 @@ function initVisualization() {
       .enter()
       .append('path')
       .attr('class', d => saIds.has(d.id) ? 'land sa-land' : 'land other-land')
+      .attr('id', d => `country-${d.id}`)
+      .attr('fill', d => countryPalette[d.id] || (saIds.has(d.id) ? '#22201d' : '#141312'))
+      .attr('d', pathGen)
+      .on('mouseenter', (event, d) => onCountryHover(event, d))
+      .on('mouseleave', () => onCountryLeave());
+
+    // 6. Líneas divisorias de fronteras internacionales con trazo nítido (topojson.mesh)
+    const saBorders = topojson.mesh(state.worldData, state.worldData.objects.countries, (a, b) => {
+      return a !== b && (saIds.has(a.id) || saIds.has(b.id));
+    });
+
+    gMap.append('path')
+      .datum(saBorders)
+      .attr('class', 'country-border-mesh')
       .attr('d', pathGen);
+
+    // 7. Rótulos cartográficos de países integrados sutilmente
+    const labelConfigs = {
+      '032': { name: 'ARGENTINA', offset: [20, 10], cls: 'label-large' },
+      '152': { name: 'CHILE', offset: [-18, 25], rotate: -85 },
+      '068': { name: 'BOLIVIA', offset: [10, 0] },
+      '604': { name: 'PERÚ', offset: [-15, -10] },
+      '218': { name: 'ECUADOR', offset: [-18, -12] },
+      '170': { name: 'COLOMBIA', offset: [15, -10] },
+      '862': { name: 'VENEZUELA', offset: [0, 0] },
+      '076': { name: 'BRASIL', offset: [25, 0], cls: 'label-huge' },
+      '600': { name: 'PARAGUAY', offset: [0, 0] },
+      '858': { name: 'URUGUAY', offset: [0, 0] }
+    };
+
+    const gCountryLabels = gMap.append('g').attr('class', 'country-labels-layer');
+
+    countries.features.filter(f => labelConfigs[f.id]).forEach(f => {
+      const conf = labelConfigs[f.id];
+      const pt = pathGen.centroid(f);
+      if (pt && !isNaN(pt[0])) {
+        const lx = pt[0] + (conf.offset ? conf.offset[0] : 0);
+        const ly = pt[1] + (conf.offset ? conf.offset[1] : 0);
+        const textElem = gCountryLabels.append('text')
+          .attr('class', `country-label ${conf.cls || ''}`)
+          .attr('id', `c-label-${f.id}`)
+          .attr('x', lx)
+          .attr('y', ly)
+          .text(conf.name);
+
+        if (conf.rotate) {
+          textElem.attr('transform', `rotate(${conf.rotate}, ${lx}, ${ly})`);
+        }
+      }
+    });
   }
 
   // 5. Renderizar las amenazas de Sudamérica con algoritmo anti-solapamiento de largo uniforme
@@ -405,6 +472,25 @@ function onVolcanoLeave() {
   d3.selectAll('.volcano-leader').classed('highlighted', d => state.selectedVolcano && state.selectedVolcano.id === d?.id);
   d3.selectAll('.volcano-anchor-group').classed('highlighted', d => state.selectedVolcano && state.selectedVolcano.id === d?.id);
   tooltip.style('opacity', 0);
+}
+
+function onCountryHover(event, d) {
+  if (!d.properties || !d.properties.name) return;
+  // Solo mostrar tooltip de país si el cursor no está sobre un volcán
+  if (d3.selectAll('.volcano-mark.hovered').empty() && !state.selectedVolcano) {
+    tooltip.html(`<div class="tooltip-title" style="margin:0; font-size: 0.85rem; color: #ff9d66;">${d.properties.name}</div>`)
+      .style('left', `${event.pageX + 12}px`)
+      .style('top', `${event.pageY - 16}px`)
+      .style('opacity', 0.9);
+  }
+  d3.select(`#c-label-${d.id}`).classed('hovered', true);
+}
+
+function onCountryLeave() {
+  if (d3.selectAll('.volcano-mark.hovered').empty() && !state.selectedVolcano) {
+    tooltip.style('opacity', 0);
+  }
+  d3.selectAll('.country-label').classed('hovered', false);
 }
 
 async function onVolcanoSelect(d) {

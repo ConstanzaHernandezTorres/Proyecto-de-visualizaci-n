@@ -397,19 +397,72 @@ body {
   fill: var(--land-fill);
   stroke: var(--land-stroke);
   stroke-width: 0.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 .land.sa-land {
-  fill: #1c1a17;
-  stroke: rgba(244, 236, 224, 0.16);
-  stroke-width: 0.65px;
+  stroke: rgba(244, 236, 224, 0.35);
+  stroke-width: 0.9px;
+  cursor: pointer;
+  transition: filter 0.15s ease, stroke 0.15s ease;
+}
+
+.land.sa-land:hover {
+  filter: brightness(1.28);
+  stroke: #ff9100 !important;
+  stroke-width: 1.5px !important;
 }
 
 .land.other-land {
-  fill: #131211;
+  fill: #131211 !important;
   stroke: rgba(244, 236, 224, 0.05);
   stroke-width: 0.4px;
-  opacity: 0.45;
+  opacity: 0.35;
+}
+
+/* Fronteras internacionales nítidas estilo cartográfico */
+.country-border-mesh {
+  fill: none;
+  stroke: rgba(244, 236, 224, 0.48);
+  stroke-width: 1.15px;
+  stroke-dasharray: 3, 2.5;
+  pointer-events: none;
+}
+
+/* Rótulos de nombres de países */
+.country-label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  fill: rgba(244, 236, 224, 0.42);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  user-select: none;
+  paint-order: stroke;
+  stroke: #0e0d0c;
+  stroke-width: 2.2px;
+  stroke-linejoin: round;
+  transition: fill 0.15s ease, opacity 0.15s ease;
+}
+
+.country-label.label-large {
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  fill: rgba(244, 236, 224, 0.36);
+}
+
+.country-label.label-huge {
+  font-size: 14px;
+  letter-spacing: 0.32em;
+  fill: rgba(244, 236, 224, 0.28);
+}
+
+.country-label.hovered {
+  fill: #fff !important;
+  opacity: 1 !important;
 }
 
 .graticule {
