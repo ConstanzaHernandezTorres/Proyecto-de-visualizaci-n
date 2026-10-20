@@ -120,23 +120,39 @@ function initVisualization() {
 
   svg.call(zoomBehavior);
 
-  // Proyección cartográfica centrada en Sudamérica y ajustada a la Cordillera de los Andes
-  // Centro: longitud -66°, latitud -24°
-  projection = d3.geoMercator()
-    .center([-66, -24])
-    .scale(height * 0.84)
-    .translate([width / 2, height / 2]);
+  // 1. Identificar geometrías de Sudamérica para encajar y maximizar la escala
+  const saIds = new Set(['032','068','076','152','170','218','238','254','328','600','604','740','858','862']);
+  let saFeature = null;
+  if (state.worldData && state.worldData.objects && state.worldData.objects.countries) {
+    const saGeoms = state.worldData.objects.countries.geometries.filter(g => saIds.has(g.id));
+    saFeature = topojson.feature(state.worldData, { type: 'GeometryCollection', geometries: saGeoms });
+  }
+
+  // 2. Proyección cartográfica centrada en Sudamérica y ajustada para ocupar el tamaño máximo
+  // Dejando margen izquierdo para el panel de guía y margen derecho para la leyenda
+  const leftPad = Math.max(290, Math.min(340, width * 0.26));
+  const rightPad = Math.max(120, Math.min(180, width * 0.12));
+
+  if (saFeature) {
+    projection = d3.geoMercator()
+      .fitExtent([[leftPad, 20], [width - rightPad, height - 25]], saFeature);
+  } else {
+    projection = d3.geoMercator()
+      .center([-66, -24])
+      .scale(height * 0.95)
+      .translate([width * 0.58, height * 0.5]);
+  }
 
   pathGen = d3.geoPath().projection(projection);
 
-  // 1. Cuadrícula sutil
+  // 3. Cuadrícula sutil
   const graticule = d3.geoGraticule();
   gMap.append('path')
     .datum(graticule)
     .attr('class', 'graticule')
     .attr('d', pathGen);
 
-  // 2. Mapa físico de países
+  // 4. Mapa físico de países con resalte continental
   if (state.worldData) {
     const countries = topojson.feature(state.worldData, state.worldData.objects.countries);
     gMap.append('g')
@@ -145,16 +161,16 @@ function initVisualization() {
       .data(countries.features)
       .enter()
       .append('path')
-      .attr('class', 'land')
+      .attr('class', d => saIds.has(d.id) ? 'land sa-land' : 'land other-land')
       .attr('d', pathGen);
   }
 
-  // 3. Renderizar las amenazas de Sudamérica con algoritmo anti-solapamiento
+  // 5. Renderizar las amenazas de Sudamérica con algoritmo anti-solapamiento de largo uniforme
   renderSouthAmericaThreats();
 }
 
 /**
- * Filtra las 39 amenazas mayores de Sudamérica y resuelve completamente el solapamiento
+ * Filtra las 39 amenazas mayores de Sudamérica y resuelve el solapamiento con proyección de largo uniforme
  */
 function renderSouthAmericaThreats() {
   // Filtrar estrictamente a las amenazas mayores de Sudamérica:
@@ -164,12 +180,15 @@ function renderSouthAmericaThreats() {
     (v.max_vei >= 4 || (v.pop_10km || 0) >= 10000)
   );
 
+  // Largo uniforme de la línea punteada para todos los volcanes proyectados (62px)
+  const LINE_LEN = 62;
+
   // Crear nodos con coordenadas proyectadas y radio
   const nodes = saThreats.map(d => {
     const p = projection([d.lon, d.lat]);
     const pop = d.pop_10km || 0;
     // Escala perceptualmente calibrada para no saturar
-    const r = Math.max(5.5, Math.min(18, 4.5 + Math.log10(pop + 1) * 2.3));
+    const r = Math.max(5.5, Math.min(16, 4.5 + Math.log10(pop + 1) * 2.1));
     return {
       data: d,
       id: d.id,
@@ -181,13 +200,38 @@ function renderSouthAmericaThreats() {
       origY: p ? p[1] : 0,
       x: p ? p[0] : 0,
       y: p ? p[1] : 0,
-      r: r
+      r: r,
+      needsProjection: false
     };
   });
 
-  // ALGORITMO DE SEPARACIÓN (ANTI-SOLAPAMIENTO):
-  // Itera relajando colisiones entre círculos cercanos para que la distancia >= r1 + r2 + 4px
-  for (let iter = 0; iter < 60; iter++) {
+  // Detectar volcanes que se solaparían si se dibujaran directamente sobre su cráter
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const d = Math.hypot(nodes[i].origX - nodes[j].origX, nodes[i].origY - nodes[j].origY);
+      if (d < nodes[i].r + nodes[j].r + 8) {
+        nodes[i].needsProjection = true;
+        nodes[j].needsProjection = true;
+      }
+    }
+  }
+
+  // Ordenar de norte a sur para inicializar abanicos ordenados
+  nodes.sort((a, b) => a.origY - b.origY);
+
+  // Inicialización de la proyección: fanning hacia el oeste (Océano Pacífico)
+  // y alternancia leve para repartir los densos cúmulos de Ecuador y el sur de Chile
+  nodes.forEach((n, idx) => {
+    if (n.needsProjection) {
+      const side = idx % 2 === 0 ? -1 : 1;
+      const angle = side === -1 ? Math.PI + ((idx % 4) - 1.5) * 0.35 : ((idx % 4) - 1.5) * 0.35;
+      n.x = n.origX + Math.cos(angle) * LINE_LEN;
+      n.y = n.origY + Math.sin(angle) * LINE_LEN;
+    }
+  });
+
+  // Relajación de colisiones con preservación estricta de largo uniforme (LINE_LEN)
+  for (let iter = 0; iter < 250; iter++) {
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i];
@@ -199,43 +243,60 @@ function renderSouthAmericaThreats() {
 
         if (dist < minDist && dist > 0.001) {
           const overlap = minDist - dist;
-          // Puje preferentemente horizontal (Este-Oeste) para preservar la correspondencia latitudinal
-          const angle = Math.atan2(dy, dx);
-          const pushFactor = overlap * 0.52;
-          const px = Math.cos(angle) * pushFactor;
-          const py = Math.sin(angle) * pushFactor * 0.35; // menor desplazamiento vertical
-
-          a.x -= px;
-          a.y -= py;
-          b.x += px;
-          b.y += py;
+          const px = (dx / dist) * overlap * 0.5;
+          const py = (dy / dist) * overlap * 0.5;
+          if (a.needsProjection) { a.x -= px; a.y -= py; }
+          if (b.needsProjection) { b.x += px; b.y += py; }
         }
       }
     }
+
+    // Restricción: mantener largo estrictamente idéntico (62px) para todos los proyectados
+    nodes.forEach(n => {
+      if (n.needsProjection) {
+        const curDist = Math.hypot(n.x - n.origX, n.y - n.origY) || 1;
+        n.x = n.origX + ((n.x - n.origX) / curDist) * LINE_LEN;
+        n.y = n.origY + ((n.y - n.origY) / curDist) * LINE_LEN;
+      }
+    });
   }
 
   state.threatNodes = nodes;
 
-  // 1. Dibujar líneas guía (leader lines) y puntos de anclaje para marcas desplazadas
+  // 1. Dibujar líneas guía uniformes y puntos de anclaje (cráter) destacados
   gLeaders.selectAll('*').remove();
 
   nodes.forEach(n => {
-    const displacement = Math.hypot(n.x - n.origX, n.y - n.origY);
-    if (displacement > 2.5) {
-      // Línea punteada que conecta el círculo con el cráter físico
+    if (n.needsProjection) {
+      // Línea punteada de largo uniforme y evidente
       gLeaders.append('line')
         .attr('class', 'volcano-leader')
+        .attr('id', `leader-${n.id}`)
         .attr('x1', n.origX)
         .attr('y1', n.origY)
         .attr('x2', n.x)
         .attr('y2', n.y);
 
-      // Pequeño punto de anclaje en el cráter físico
-      gLeaders.append('circle')
-        .attr('class', 'volcano-anchor')
+      // Símbolo de cráter físico en la cordillera (anillo exterior + núcleo)
+      const anchorG = gLeaders.append('g')
+        .attr('class', 'volcano-anchor-group')
+        .attr('id', `anchor-${n.id}`)
+        .attr('title', `${n.name} (cráter real)`)
+        .on('mouseenter', (event) => onVolcanoHover(event, n.data))
+        .on('mouseleave', () => onVolcanoLeave())
+        .on('click', () => onVolcanoSelect(n.data));
+
+      anchorG.append('circle')
+        .attr('class', 'volcano-anchor-ring')
         .attr('cx', n.origX)
         .attr('cy', n.origY)
-        .attr('r', 1.8);
+        .attr('r', 3.8);
+
+      anchorG.append('circle')
+        .attr('class', 'volcano-anchor-dot')
+        .attr('cx', n.origX)
+        .attr('cy', n.origY)
+        .attr('r', 1.6);
     }
   });
 
@@ -322,9 +383,9 @@ function onVolcanoHover(event, d) {
     return;
   }
 
-  d3.select(`#v-mark-${d.id}`)
-    .classed('hovered', true)
-    .raise();
+  d3.select(`#v-mark-${d.id}`).classed('hovered', true).raise();
+  d3.select(`#leader-${d.id}`).classed('highlighted', true);
+  d3.select(`#anchor-${d.id}`).classed('highlighted', true);
 
   window.volcanoAudio.playHoverTick();
 
@@ -343,6 +404,8 @@ function onVolcanoHover(event, d) {
 
 function onVolcanoLeave() {
   d3.selectAll('.volcano-mark').classed('hovered', false);
+  d3.selectAll('.volcano-leader').classed('highlighted', d => state.selectedVolcano && state.selectedVolcano.id === d?.id);
+  d3.selectAll('.volcano-anchor-group').classed('highlighted', d => state.selectedVolcano && state.selectedVolcano.id === d?.id);
   tooltip.style('opacity', 0);
 }
 
@@ -352,8 +415,12 @@ async function onVolcanoSelect(d) {
   tooltip.style('opacity', 0);
   d3.selectAll('.volcano-mark').classed('hovered', false);
   d3.selectAll('.volcano-mark').classed('selected', false);
+  d3.selectAll('.volcano-leader').classed('highlighted', false);
+  d3.selectAll('.volcano-anchor-group').classed('highlighted', false);
 
   d3.select(`#v-mark-${d.id}`).classed('selected', true).raise();
+  d3.select(`#leader-${d.id}`).classed('highlighted', true);
+  d3.select(`#anchor-${d.id}`).classed('highlighted', true);
 
   // Enfocar suavemente con zoom
   const p = projection([d.lon, d.lat]);
@@ -437,6 +504,8 @@ function selectDefaultVolcano() {
     state.selectedVolcano = defaultV;
     renderInspectorCard(defaultV);
     d3.select(`#v-mark-${defaultV.id}`).classed('selected', true);
+    d3.select(`#leader-${defaultV.id}`).classed('highlighted', true);
+    d3.select(`#anchor-${defaultV.id}`).classed('highlighted', true);
   }
 }
 
