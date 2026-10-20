@@ -631,43 +631,6 @@ body {
   color: var(--text-dim);
 }
 
-.legend-group-proj {
-  margin-top: 2px;
-  padding-top: 5px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
-}
-
-.legend-proj-guide {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  color: var(--text-muted);
-}
-
-.legend-anchor-symbol {
-  color: rgba(244, 236, 224, 0.65);
-  font-weight: 700;
-  font-size: 0.85rem;
-}
-
-.legend-dash-symbol {
-  color: rgba(244, 236, 224, 0.45);
-  letter-spacing: -1.2px;
-}
-
-.legend-node-symbol {
-  color: #fff;
-  font-size: 0.82rem;
-  font-weight: bold;
-}
-
-.legend-proj-text {
-  margin-left: 2px;
-  color: var(--text-dim);
-}
-
 /* ==========================================================================
    TOOLTIP
    ========================================================================== */
