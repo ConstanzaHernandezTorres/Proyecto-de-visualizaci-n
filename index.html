@@ -100,22 +100,50 @@
         </div>
       </aside>
 
-      <!-- LEYENDA COMPACTA -->
+      <!-- LEYENDA CALIBRADA -->
       <div class="viz-legend" aria-label="Leyenda">
-        <div class="legend-status">39 amenazas mayores de Sudamérica</div>
         <div class="legend-group">
-          <span class="legend-title">VEI (Explosividad)</span>
+          <span class="legend-title">Índice de Explosividad (VEI)</span>
           <div class="legend-gradient"></div>
-          <div class="legend-nums"><span>0</span><span>3</span><span>5</span><span>7</span></div>
+          <div class="legend-nums">
+            <span>0</span>
+            <span>1</span>
+            <span>2</span>
+            <span>3</span>
+            <span>4</span>
+            <span>5</span>
+            <span>6</span>
+            <span>7</span>
+          </div>
         </div>
         <div class="legend-group">
-          <span class="legend-title">Evacuación (10 km)</span>
-          <div class="legend-dots">
-            <span class="d d1"></span>
-            <span class="d d2"></span>
-            <span class="d d3"></span>
+          <span class="legend-title">Evacuación (Población a 10 km)</span>
+          <div class="legend-pop-scale">
+            <div class="pop-tier">
+              <div class="pop-circle-box">
+                <span class="pop-circle circle-sm"></span>
+              </div>
+              <span class="pop-label">0</span>
+            </div>
+            <div class="pop-tier">
+              <div class="pop-circle-box">
+                <span class="pop-circle circle-md"></span>
+              </div>
+              <span class="pop-label">10k</span>
+            </div>
+            <div class="pop-tier">
+              <div class="pop-circle-box">
+                <span class="pop-circle circle-lg"></span>
+              </div>
+              <span class="pop-label">100k</span>
+            </div>
+            <div class="pop-tier">
+              <div class="pop-circle-box">
+                <span class="pop-circle circle-xl"></span>
+              </div>
+              <span class="pop-label">500k+</span>
+            </div>
           </div>
-          <div class="legend-nums"><span>0</span><span>10k</span><span>500k+</span></div>
         </div>
         <div class="legend-group legend-group-proj">
           <span class="legend-title">Proyección anti-solapamiento</span>
@@ -123,7 +151,7 @@
             <span class="legend-anchor-symbol">⊙</span>
             <span class="legend-dash-symbol">┈┈┈</span>
             <span class="legend-node-symbol">○</span>
-            <span class="legend-proj-text">Cráter ➔ Datos</span>
+            <span class="legend-proj-text">Cráter real ➔ Datos</span>
           </div>
         </div>
       </div>
