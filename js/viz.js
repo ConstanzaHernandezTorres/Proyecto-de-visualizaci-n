@@ -90,9 +90,15 @@ function initVisualization() {
   gVolcanoes = gRoot.append('g').attr('class', 'volcanoes-g');
   gLabels = gRoot.append('g').attr('class', 'labels-g');
 
-  // Zoom interactivo configurado ANTES de cualquier llamada
+  // Zoom interactivo delimitado estrictamente a Sudamérica:
+  // - scaleExtent([1, 8]): la vista base (k=1) es el zoom mínimo (no permite alejarse a ver vacío)
+  // - translateExtent([[0, 0], [width, height]]): a nivel base (k=1) bloquea el desplazamiento.
+  //   Al hacer zoom (k>1), permite explorar pero restringe el desplazamiento dentro de la vista,
+  //   impidiendo navegar hacia el resto del mundo.
   zoomBehavior = d3.zoom()
-    .scaleExtent([0.8, 16])
+    .scaleExtent([1, 8])
+    .extent([[0, 0], [width, height]])
+    .translateExtent([[0, 0], [width, height]])
     .on('start', () => {
       tooltip.style('opacity', 0);
     })
@@ -127,8 +133,8 @@ function initVisualization() {
 
   pathGen = d3.geoPath().projection(projection);
 
-  // 3. Cuadrícula sutil
-  const graticule = d3.geoGraticule();
+  // 3. Cuadrícula sutil delimitada a la región de Sudamérica
+  const graticule = d3.geoGraticule().extent([[-92, -58], [-32, 14]]);
   gMap.append('path')
     .datum(graticule)
     .attr('class', 'graticule')
@@ -151,24 +157,25 @@ function initVisualization() {
     '238': '#1c1f23'  // Falkland
   };
 
-  // 5. Capa de países con colores diferenciados y respuesta interactiva
+  // 5. Capa de países: exclusivamente los países de Sudamérica
   if (state.worldData) {
     const countries = topojson.feature(state.worldData, state.worldData.objects.countries);
+    const saCountries = countries.features.filter(d => saIds.has(d.id));
 
     gMap.append('g')
       .attr('class', 'countries-layer')
       .selectAll('path')
-      .data(countries.features)
+      .data(saCountries)
       .enter()
       .append('path')
-      .attr('class', d => saIds.has(d.id) ? 'land sa-land' : 'land other-land')
+      .attr('class', 'land sa-land')
       .attr('id', d => `country-${d.id}`)
-      .attr('fill', d => countryPalette[d.id] || (saIds.has(d.id) ? '#22201d' : '#141312'))
+      .attr('fill', d => countryPalette[d.id] || '#22201d')
       .attr('d', pathGen);
 
-    // 6. Líneas divisorias de fronteras internacionales con trazo nítido (topojson.mesh)
+    // 6. Líneas divisorias de fronteras internacionales con trazo nítido (solo internas de Sudamérica)
     const saBorders = topojson.mesh(state.worldData, state.worldData.objects.countries, (a, b) => {
-      return a !== b && (saIds.has(a.id) || saIds.has(b.id));
+      return a !== b && saIds.has(a.id) && saIds.has(b.id);
     });
 
     gMap.append('path')
