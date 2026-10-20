@@ -54,21 +54,6 @@ function setupUIEvents() {
     }
   }, { once: true });
 
-  // Botón de re-sonificación en la ficha
-  const resoundBtn = document.getElementById('btn-resound');
-  if (resoundBtn) {
-    resoundBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (!window.volcanoAudio.isInitialized) {
-        await window.volcanoAudio.init();
-      }
-      if (state.selectedVolcano) {
-        triggerConcentricWaves(state.selectedVolcano);
-        window.volcanoAudio.sonifyVolcano(state.selectedVolcano, state.activeRadius);
-      }
-    });
-  }
-
   // Controles de zoom
   document.getElementById('btn-zoom-in').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -87,10 +72,7 @@ function setupUIEvents() {
 }
 
 function updateAudioUI(enabled) {
-  const resoundBtn = document.getElementById('btn-resound');
-  if (resoundBtn && enabled) {
-    resoundBtn.classList.add('ready');
-  }
+  // Audio UI helper
 }
 
 function initVisualization() {
