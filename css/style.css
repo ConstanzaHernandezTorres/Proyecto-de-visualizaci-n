@@ -329,14 +329,7 @@ body {
 .land.sa-land {
   stroke: rgba(244, 236, 224, 0.35);
   stroke-width: 0.9px;
-  cursor: pointer;
-  transition: filter 0.15s ease, stroke 0.15s ease;
-}
-
-.land.sa-land:hover {
-  filter: brightness(1.28);
-  stroke: #ff9100 !important;
-  stroke-width: 1.5px !important;
+  cursor: default;
 }
 
 .land.other-land {
@@ -383,11 +376,6 @@ body {
   font-size: 14px;
   letter-spacing: 0.32em;
   fill: rgba(244, 236, 224, 0.28);
-}
-
-.country-label.hovered {
-  fill: #fff !important;
-  opacity: 1 !important;
 }
 
 .graticule {

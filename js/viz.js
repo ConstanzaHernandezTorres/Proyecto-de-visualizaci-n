@@ -164,9 +164,7 @@ function initVisualization() {
       .attr('class', d => saIds.has(d.id) ? 'land sa-land' : 'land other-land')
       .attr('id', d => `country-${d.id}`)
       .attr('fill', d => countryPalette[d.id] || (saIds.has(d.id) ? '#22201d' : '#141312'))
-      .attr('d', pathGen)
-      .on('mouseenter', (event, d) => onCountryHover(event, d))
-      .on('mouseleave', () => onCountryLeave());
+      .attr('d', pathGen);
 
     // 6. Líneas divisorias de fronteras internacionales con trazo nítido (topojson.mesh)
     const saBorders = topojson.mesh(state.worldData, state.worldData.objects.countries, (a, b) => {
@@ -526,25 +524,6 @@ function onVolcanoLeave() {
   d3.selectAll('.volcano-leader').classed('highlighted', d => state.selectedVolcano && state.selectedVolcano.id === d?.id);
   d3.selectAll('.volcano-anchor-group').classed('highlighted', d => state.selectedVolcano && state.selectedVolcano.id === d?.id);
   tooltip.style('opacity', 0);
-}
-
-function onCountryHover(event, d) {
-  if (!d.properties || !d.properties.name) return;
-  // Solo mostrar tooltip de país si el cursor no está sobre un volcán
-  if (d3.selectAll('.volcano-mark.hovered').empty() && !state.selectedVolcano) {
-    tooltip.html(`<div class="tooltip-title" style="margin:0; font-size: 0.85rem; color: #ff9d66;">${d.properties.name}</div>`)
-      .style('left', `${event.pageX + 12}px`)
-      .style('top', `${event.pageY - 16}px`)
-      .style('opacity', 0.9);
-  }
-  d3.select(`#c-label-${d.id}`).classed('hovered', true);
-}
-
-function onCountryLeave() {
-  if (d3.selectAll('.volcano-mark.hovered').empty() && !state.selectedVolcano) {
-    tooltip.style('opacity', 0);
-  }
-  d3.selectAll('.country-label').classed('hovered', false);
 }
 
 async function onVolcanoSelect(d) {
