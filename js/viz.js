@@ -387,8 +387,6 @@ function onVolcanoHover(event, d) {
   d3.select(`#leader-${d.id}`).classed('highlighted', true);
   d3.select(`#anchor-${d.id}`).classed('highlighted', true);
 
-  window.volcanoAudio.playHoverTick();
-
   const pop10 = (d.pop_10km || 0).toLocaleString();
 
   tooltip.html(`
