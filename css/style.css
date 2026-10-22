@@ -251,19 +251,6 @@ body {
   r: 2.6px;
 }
 
-.volcano-direct-label {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 600;
-  fill: #f4ece0;
-  paint-order: stroke;
-  stroke: #0e0d0c;
-  stroke-width: 2.5px;
-  stroke-linejoin: round;
-  pointer-events: none;
-  user-select: none;
-}
-
 /* ==========================================================================
    CONTROLES DE ZOOM
    ========================================================================== */

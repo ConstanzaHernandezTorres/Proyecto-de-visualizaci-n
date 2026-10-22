@@ -456,51 +456,6 @@ function renderSouthAmericaThreats() {
     .style('stroke', '#0e0d0c')
     .style('stroke-width', '1.1px')
     .style('opacity', 0.88);
-
-  // 7. Etiquetas visuales directas para responder el mensaje de inmediato (sin interactuar)
-  renderDirectLabels(nodes);
-}
-
-/**
- * Rótulos directos sobre los volcanes más emblemáticos (visibles de entrada)
- */
-function renderDirectLabels(nodes) {
-  gLabels.selectAll('*').remove();
-
-  // Selección de los casos más relevantes para rotular directamente
-  const highlightedNames = [
-    'Pululahua',
-    'Galeras',
-    'Ruiz',
-    'Villarrica',
-    'Calbuco',
-    'Hudson'
-  ];
-
-  nodes.forEach(n => {
-    const isHighlighted = highlightedNames.some(name => n.name.includes(name));
-    if (isHighlighted) {
-      // Posicionar la etiqueta hacia el exterior del círculo de datos
-      const isRight = n.needsProjection ? (n.dir === 1) : (n.x >= (projection.translate()[0] || 500));
-      const textX = isRight ? n.x + n.r + 6 : n.x - n.r - 6;
-      const textAnchor = isRight ? 'start' : 'end';
-
-      let shortLabel = n.name;
-      if (n.name.includes('Pululahua')) shortLabel = 'Pululahua (534k hab · VEI 5)';
-      else if (n.name.includes('Galeras')) shortLabel = 'Galeras (121k hab · VEI 3)';
-      else if (n.name.includes('Ruiz')) shortLabel = 'Nevado del Ruiz (20k · Armero)';
-      else if (n.name.includes('Villarrica')) shortLabel = 'Villarrica (VEI 5 · Chile)';
-      else if (n.name.includes('Calbuco')) shortLabel = 'Calbuco (VEI 5 · Chile)';
-      else if (n.name.includes('Hudson')) shortLabel = 'Cerro Hudson (VEI 6 · Chile)';
-
-      gLabels.append('text')
-        .attr('class', 'volcano-direct-label')
-        .attr('x', textX)
-        .attr('y', n.y + 3)
-        .attr('text-anchor', textAnchor)
-        .text(shortLabel);
-    }
-  });
 }
 
 function onVolcanoHover(event, d) {
