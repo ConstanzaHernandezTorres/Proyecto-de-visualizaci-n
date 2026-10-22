@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>El Cinturón de Fuego — Riesgo Volcánico y Población</title>
+  <title>¿Dónde se encuentran las mayores amenazas volcánicas en Sudamérica?</title>
 
   <!-- Tipografía -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,17 +20,17 @@
 </head>
 <body>
 
-  <!-- CABECERA MÍNIMA -->
+  <!-- CABECERA EXPLICATIVA DIRECTA (CÁPSULAS 17 Y 18) -->
   <header class="app-header">
-    <h1 class="main-title">El Cinturón de Fuego <span class="title-sub">· Fuerza Geológica (VEI) vs. Población en Zona de Evacuación (10 km)</span></h1>
-    <div class="source-credit">Smithsonian GVP & LandScan</div>
+    <div class="header-main">
+      <h1 class="main-title">¿Dónde se encuentran las mayores amenazas volcánicas en Sudamérica?</h1>
+    </div>
+    <div class="source-credit">Smithsonian GVP &amp; LandScan · 39 Amenazas Mayores</div>
   </header>
 
   <!-- VISUALIZACIÓN PRINCIPAL -->
   <main class="stage-container">
     <div id="viz-stage" class="viz-stage">
-      
-
 
       <!-- CONTROLES DE ZOOM -->
       <div class="zoom-controls" aria-label="Controles de zoom">
@@ -39,14 +39,37 @@
         <button id="btn-zoom-reset" class="btn-zoom" type="button" title="Restablecer vista">⟲</button>
       </div>
 
-      <!-- LIENZO SVG D3 -->
+      <!-- LIENZO SVG D3 (MAPA + VOLCANES + GUÍAS) -->
       <svg id="viz-svg" class="viz-svg"></svg>
 
-      <!-- FICHA ESENCIAL DEL VOLCÁN -->
+      <!-- RECUADRO GUÍA: MEDIDA CIUDADANA Y CLAVES VISUALES -->
+      <aside class="guide-panel" aria-label="Guía de interpretación">
+        <div class="guide-action-alert">
+          <strong>Medida ciudadana:</strong> En <strong>VEI ≥ 4</strong> el radio de <strong>10 km es indefendible</strong>: exige <strong>alerta roja y evacuación total inmediata</strong> de la población circundante.
+        </div>
+
+        <div class="guide-keys-block">
+          <span class="guide-keys-label">Claves de lectura visual:</span>
+          <div class="guide-key-item">
+            <span class="guide-dot dot-vei"></span>
+            <span><strong>Color:</strong> Nivel de explosividad VEI (más oscuro/rojo = mayor destrucción).</span>
+          </div>
+          <div class="guide-key-item">
+            <span class="guide-dot dot-pop"></span>
+            <span><strong>Tamaño:</strong> Habitantes dentro del radio de 10 km que deben evacuar.</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- FICHA ESENCIAL DEL VOLCÁN SELECCIONADO -->
       <aside id="inspector-card" class="inspector-card" aria-label="Volcán seleccionado">
+        <div class="ins-badge-row">
+          <span id="det-badge" class="ins-badge badge-critical">🚨 RIESGO CRÍTICO</span>
+        </div>
+
         <div class="ins-main">
-          <h2 id="det-title" class="ins-name">Campi Flegrei</h2>
-          <span id="det-country" class="ins-country">Italia</span>
+          <h2 id="det-title" class="ins-name">Volcán Villarrica</h2>
+          <span id="det-country" class="ins-country">Chile</span>
         </div>
 
         <div class="ins-metrics">
@@ -56,26 +79,55 @@
           </div>
           <div class="ins-metric">
             <span class="ins-metric-lbl">Evacuación (10 km)</span>
-            <span id="det-pop" class="ins-metric-val val-pop">2.234.109 hab.</span>
+            <span id="det-pop" class="ins-metric-val val-pop">1.067 hab.</span>
           </div>
         </div>
       </aside>
 
-      <!-- LEYENDA COMPACTA -->
+      <!-- LEYENDA CALIBRADA -->
       <div class="viz-legend" aria-label="Leyenda">
         <div class="legend-group">
-          <span class="legend-title">VEI (Explosividad)</span>
+          <span class="legend-title">Índice de Explosividad (VEI)</span>
           <div class="legend-gradient"></div>
-          <div class="legend-nums"><span>0</span><span>2</span><span>4</span><span>7</span></div>
+          <div class="legend-nums">
+            <span>0</span>
+            <span>1</span>
+            <span>2</span>
+            <span>3</span>
+            <span>4</span>
+            <span>5</span>
+            <span>6</span>
+            <span>7</span>
+          </div>
         </div>
         <div class="legend-group">
-          <span class="legend-title">Población (a 10 km)</span>
-          <div class="legend-dots">
-            <span class="d d1"></span>
-            <span class="d d2"></span>
-            <span class="d d3"></span>
+          <span class="legend-title">Evacuación (Población a 10 km)</span>
+          <div class="legend-pop-scale">
+            <div class="pop-tier">
+              <div class="pop-circle-box">
+                <span class="pop-circle circle-sm"></span>
+              </div>
+              <span class="pop-label">0</span>
+            </div>
+            <div class="pop-tier">
+              <div class="pop-circle-box">
+                <span class="pop-circle circle-md"></span>
+              </div>
+              <span class="pop-label">10k</span>
+            </div>
+            <div class="pop-tier">
+              <div class="pop-circle-box">
+                <span class="pop-circle circle-lg"></span>
+              </div>
+              <span class="pop-label">100k</span>
+            </div>
+            <div class="pop-tier">
+              <div class="pop-circle-box">
+                <span class="pop-circle circle-xl"></span>
+              </div>
+              <span class="pop-label">500k+</span>
+            </div>
           </div>
-          <div class="legend-nums"><span>0</span><span>10k</span><span>1M+</span></div>
         </div>
       </div>
 

@@ -73,14 +73,12 @@ def create_document():
 
     p1 = doc.add_paragraph()
     p1.add_run("La visualización responde a una pregunta analítica concreta: ")
-    r_bold1 = p1.add_run("¿Qué hace a un volcán verdaderamente peligroso?")
+    r_bold1 = p1.add_run("¿Dónde se encuentran las mayores amenazas volcánicas en Sudamérica?")
     r_bold1.bold = True
     p1.add_run(
-        " La intuición común asume que los volcanes más letales son aquellos con las erupciones más explosivas "
-        "(Índice de Explosividad Volcánica VEI 6 o 7). Sin embargo, al cruzar el catálogo histórico del Smithsonian Institution "
-        "(Global Volcanism Program) con el modelo demográfico satelital LandScan (Oak Ridge National Laboratory), "
-        "se evidencia que la mayor amenaza humanitaria no radica únicamente en la fuerza tectónica aislada, "
-        "sino en la densidad de las poblaciones que habitan directamente en su zona de evacuación inmediata."
+        " Al cruzar el catálogo histórico del Smithsonian Institution (Global Volcanism Program) con el modelo demográfico satelital "
+        "LandScan (Oak Ridge National Laboratory) para los 117 volcanes de la Cordillera de los Andes, se hace evidente una marcada paradoja territorial: "
+        "la mayor amenaza no está distribuida de manera uniforme, sino que se divide en dos polos de riesgo radicalmente distintos."
     )
 
     # Callout Box: Mensaje principal
@@ -91,13 +89,14 @@ def create_document():
     set_cell_margins(cell, top=140, bottom=140, left=200, right=200)
     p_c = cell.paragraphs[0]
     p_c.paragraph_format.space_after = Pt(0)
-    r_c_tag = p_c.add_run("Mensaje Central de la Visualización:\n")
+    r_c_tag = p_c.add_run("Mensaje Central de la Visualización (Respuesta Inmediata):\n")
     r_c_tag.bold = True
     r_c_tag.font.size = Pt(9.5)
     r_c_tag.font.color.rgb = COLOR_PRIMARY
     r_c_text = p_c.add_run(
-        "«Un volcán de explosividad moderada (VEI 4–5) con 2 millones de personas a menos de 10 km (ej. Campi Flegrei o Ilopango) "
-        "representa un riesgo humanitario inmensamente más crítico que un supervolcán VEI 7 en un territorio deshabitado.»"
+        "«En el norte (Ecuador y Colombia), la mayor amenaza es el riesgo humano inmediato: cientos de miles de personas habitan en el radio letal de 10 km "
+        "(ej. Pululahua con 534k hab. o Pasto/Galeras con 121k hab.). En el sur (Chile y Argentina), la amenaza es la extrema fuerza geológica: super-erupciones "
+        "colosales VEI 5 y 6 (Hudson, Villarrica, Calbuco, Llaima) con baja población inmediata (<1.500 hab.) pero severo impacto destructivo regional a 30–100 km.»"
     )
     r_c_text.font.italic = True
     r_c_text.font.size = Pt(10)
@@ -186,9 +185,11 @@ def create_document():
 
     caps = [
         ("Cápsula 17 — «La Pregunta Antes del Gráfico»", 
-         "El diseño no partió eligiendo un gráfico al azar. Se formuló una pregunta precisa de investigación: ¿Qué volcanes combinan explosividad con cercanía humana extrema? Todo el diseño está subordinado a responderla."),
+         "El diseño no partió eligiendo un gráfico al azar, sino respondiendo a la crítica docente: ¿Dónde radica la catástrofe humana latente? Se formuló una pregunta unívoca: qué volcanes combinan explosividad crítica (VEI ≥ 4) con poblaciones masivas en evacuación inmediata (10 km)."),
+        ("Cápsula 18 — «Ostras vs. Perlas (Exploratorio vs. Explicativo)»",
+         "Siguiendo el feedback de la revisión, se transformó la visualización de un catálogo exploratorio disperso (958 volcanes donde el usuario buscaba entre '100 ostras') a un mensaje explicativo directo: se pre-filtra de entrada a los 61 volcanes de Riesgo Crítico ('las perlas'), permitiendo comprender la emergencia demográfica en el primer segundo."),
         ("Cápsula 22 — «El Mantra de Shneiderman»", 
-         "Estructura en tres niveles: (1) Overview First: mapa global continuo con círculos proporcionales a 10 km; (2) Zoom & Filter: controles de zoom suave y arrastre; (3) Details on Demand: ficha técnica y anillos concéntricos al seleccionar."),
+         "Estructura en tres niveles: (1) Overview First: mapa global de las 61 amenazas críticas; (2) Zoom & Filter: controles de filtro por severidad y chips de casos críticos; (3) Details on Demand: ficha técnica, anillos geográficos y sonificación al seleccionar."),
         ("Cápsula 09 — «Escalar el Área, No el Radio»", 
          "Al representar la población mediante círculos, se aplicó una escala de área (raíz/logaritmo). Si se escala el radio linealmente, el área percibida se multiplica al cuadrado, induciendo un grave error de estimación perceptual."),
         ("Cápsula 10 — «El Color y Daltonismo»", 
@@ -233,12 +234,12 @@ def create_document():
         ("Descarte de tablas y barras de progreso complejas en la esquina inferior",
          "Alternativa inicial: Una tabla con cuatro barras de progreso horizontales por radio, elevación y recuento de erupciones.\n"
          "Por qué se descartó: Constituía ruido visual periférico (chartjunk) que competía con la atención del mapa. Se simplificó a una ficha esencial con dos insignias contrastadas: Explosividad (VEI) y Población en zona de evacuación (10 km). Todo lo superfluo fue eliminado para maximizar el Data-Ink Ratio."),
-        ("Solución al problema de superposición de volcanes (Overplotting)",
-         "Problema detectado: En zonas de alta concentración (Indonesia, Japón, Centroamérica), los círculos de volcanes grandes tapaban a volcanes contiguos más pequeños.\n"
-         "Solución implementada: Se implementó ordenamiento inteligente descendente por población con .order() en D3 (los círculos mayores se renderizan al fondo y los pequeños al frente en el DOM), combinado con una leve transparencia alfa (0.72) y un borde oscuro definido (0.85px), garantizando que ningún cráter quede oculto o inaccesible."),
-        ("Descarte de menús de región, buscador de texto y etiquetas fijas de mapa",
-         "Alternativa inicial: Selectores de continentes, campo de búsqueda y textos geográficos fijos flotando en el mapa.\n"
-         "Por qué se descartó: Las etiquetas fijas colisionaban entre sí y los menús restaban superficie al mapa. Dado que el mapa cuenta con navegación libre fluida (pan/zoom) y onda expansiva animada al hacer clic, el usuario explora con máxima limpieza visual."),
+        ("Solución definitiva al solapamiento de volcanes (Zero-Overlap en los Andes)",
+         "Problema detectado: En zonas andinas de altísima concentración de cráteres (los valles de Ecuador y el sur de Chile), los volcanes se alinean en un estrecho eje meridiano, solapándose entre sí al representarse con círculos proporcionales.\n"
+         "Solución implementada: Se implementó un algoritmo de relajación y separación física que garantiza una distancia mínima de 4 px entre marcas adyacentes mediante desplazamiento preferente Este-Oeste. En cada volcán desplazado, el sistema traza una línea de guía punteada (leader line) y un micro-ancla en las coordenadas geográficas exactas, logrando cero solapamiento con 100% de rigor cartográfico."),
+        ("Descarte de filtros complejos y selectores multinivel (Explicativo directo)",
+         "Alternativa probada: Menús con múltiples selectores por país, botones de umbrales y conmutadores de alcance.\n"
+         "Por qué se descartó: Siguiendo la pauta docente, la visualización debe responder la pregunta central de forma inmediata y evidente en el Overview (Cápsula 18: mostrar las perlas). Se eliminó todo panel superfluo: dos tarjetas narrativas fijas y rótulos directos en los volcanes clave comunican la conclusión sin requerir interacción previa obligatoria."),
         ("Inclusión de controles explícitos de zoom (+, −, ⟲)",
          "Por qué se incorporó: No todos los usuarios utilizan mouse con rueda o gestos multitáctiles. Incorporar botones flotantes compactos en la esquina superior derecha asegura accesibilidad universal y permite regresar instantáneamente a la vista general (Overview)."),
         ("Descarte del botón flotante de volumen (Sonificación transparente)",

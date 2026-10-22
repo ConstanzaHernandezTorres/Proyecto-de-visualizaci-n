@@ -88,10 +88,7 @@ class VolcanoAudioEngine {
   }
 
   playHoverTick() {
-    if (!this.isEnabled || !this.isInitialized) return;
-    try {
-      this.clickSynth.triggerAttackRelease('A5', '32n');
-    } catch (e) {}
+    // Sonido de hover desactivado a petición del usuario
   }
 
   sonifyVolcano(volcano, radiusKey = 'pop_10km') {
